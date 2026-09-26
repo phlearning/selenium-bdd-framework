@@ -1,0 +1,19 @@
+# Build
+target/
+
+# Local secrets
+.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+
+# Allure CLI download and local report history
+.allure/
