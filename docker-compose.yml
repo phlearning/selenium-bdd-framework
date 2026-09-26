@@ -1,8 +1,35 @@
-# Local copy of the applications under test.
-#   docker compose up -d        then   ./mvnw test
+# Applications under test and Selenium Grid.
+#
+#   docker compose up -d --wait                  the-internet only (local browsers)
+#   docker compose --profile grid up -d --wait   + Selenium Grid (hub, Chrome and Firefox nodes)
+#
+# Grid sizing: CHROME_NODES / FIREFOX_NODES nodes of one session each (default 4). One session
+# per node keeps one browser per screen, which is what makes per-session videos readable.
+x-node: &node
+  shm_size: 2gb
+  depends_on:
+    selenium-hub:
+      condition: service_healthy
+  volumes:
+    - ./.grid/videos:/videos
+    - ./target/grid-downloads:/home/seluser/Downloads
+  environment: &node-env
+    SE_EVENT_BUS_HOST: selenium-hub
+    SE_NODE_GRID_URL: http://selenium-hub:4444
+    SE_NODE_MAX_SESSIONS: 1
+    SE_NODE_ENABLE_MANAGED_DOWNLOADS: "true"
+    # Recording is off by default; a session opts in with the se:recordVideo capability (-Dvideo=true).
+    SE_RECORD_VIDEO: "false"
+    # Video file named after the session id, so a scenario can find its own video.
+    SE_VIDEO_FILE_NAME: auto
+    SE_SCREEN_WIDTH: 1920
+    SE_SCREEN_HEIGHT: 1080
+  profiles: [grid]
+
 services:
-  # https://github.com/saucelabs/the-internet - technical cases (windows, frames, alerts, upload).
+  # https://github.com/saucelabs/the-internet - technical cases (windows, frames, alerts, files).
   # The public instance is too slow and unreliable to be tested against.
+  # Seen from Grid browsers as http://the-internet:5000, from the host as http://localhost:7080.
   the-internet:
     image: gprestes/the-internet:latest
     ports:
@@ -12,3 +39,29 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  selenium-hub:
+    image: selenium/hub:4.49.0-20260909
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+    healthcheck:
+      # Hub is up; nodes register afterwards and session requests queue until a node is free.
+      test: ["CMD-SHELL", "curl -sf http://localhost:4444/status > /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    profiles: [grid]
+
+  chrome:
+    <<: *node
+    image: selenium/node-chrome:4.49.0-20260909
+    deploy:
+      replicas: ${CHROME_NODES:-4}
+
+  firefox:
+    <<: *node
+    image: selenium/node-firefox:4.49.0-20260909
+    deploy:
+      replicas: ${FIREFOX_NODES:-4}

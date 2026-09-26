@@ -51,7 +51,7 @@ public abstract class BasePage {
 
     protected void click(By locator) {
         log.debug("Click {}", locator);
-        wait.until(d -> {
+        wait.withMessage("clickable " + locator).until(d -> {
             ExpectedConditions.elementToBeClickable(locator).apply(d).click();
             return true;
         });
@@ -59,7 +59,7 @@ public abstract class BasePage {
 
     protected void type(By locator, String text) {
         log.debug("Type '{}' into {}", text, locator);
-        wait.until(d -> {
+        wait.withMessage("typing into " + locator).until(d -> {
             WebElement element = d.findElement(locator);
             element.clear();
             if (!text.isEmpty()) {
@@ -72,7 +72,7 @@ public abstract class BasePage {
     /** Same as {@link #type} but the value never reaches the logs. */
     protected void typeSecret(By locator, String secret) {
         log.debug("Type ******** into {}", locator);
-        wait.until(d -> {
+        wait.withMessage("typing into " + locator).until(d -> {
             WebElement element = d.findElement(locator);
             element.clear();
             if (!secret.isEmpty()) {
@@ -83,7 +83,7 @@ public abstract class BasePage {
     }
 
     protected String textOf(By locator) {
-        return wait.until(d -> {
+        return wait.withMessage("visible text of " + locator).until(d -> {
             WebElement element = d.findElement(locator);
             return element.isDisplayed() ? element.getText() : null;
         });

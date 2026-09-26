@@ -31,6 +31,7 @@ public class ReportHooks {
             environment.setProperty("the-internet URL", config.get("the-internet.url"));
             environment.setProperty("Browser", config.get("browser"));
             environment.setProperty("Headless", config.get("headless"));
+            environment.setProperty("Execution", config.get("execution"));
             environment.setProperty("Java", System.getProperty("java.version"));
             environment.setProperty("OS", System.getProperty("os.name") + " " + System.getProperty("os.version"));
             try (OutputStream out = Files.newOutputStream(results.resolve("environment.properties"))) {

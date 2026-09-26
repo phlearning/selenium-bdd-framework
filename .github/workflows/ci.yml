@@ -1,0 +1,29 @@
+# Fast feedback on every push to main and every pull request: @smoke scenarios, headless Chrome.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  smoke:
+    uses: ./.github/workflows/run-tests.yml
+    with:
+      browser: chrome
+      tags: "@smoke"
+      execution: local
+      threads: 4
+      report-name: smoke-chrome
+    secrets:
+      SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
+      SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
