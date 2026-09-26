@@ -5,8 +5,8 @@ import io.cucumber.java.fr.Quand;
 import io.cucumber.java.fr.Soit;
 import io.github.phlearning.bdd.config.Config;
 import io.github.phlearning.bdd.driver.DriverManager;
-import io.github.phlearning.bdd.pages.InventoryPage;
-import io.github.phlearning.bdd.pages.LoginPage;
+import io.github.phlearning.bdd.pages.saucedemo.InventoryPage;
+import io.github.phlearning.bdd.pages.saucedemo.LoginPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

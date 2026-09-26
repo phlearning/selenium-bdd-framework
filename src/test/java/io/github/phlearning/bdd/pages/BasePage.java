@@ -1,6 +1,7 @@
 package io.github.phlearning.bdd.pages;
 
 import io.github.phlearning.bdd.config.Config;
+import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.ElementNotInteractableException;
@@ -13,8 +14,11 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Common interactions for page objects. Every interaction waits explicitly for the
@@ -92,5 +96,40 @@ public abstract class BasePage {
     protected void open(String url) {
         log.debug("Open {}", url);
         driver.get(url);
+    }
+
+    // --- Frames -----------------------------------------------------------------------
+
+    /**
+     * Runs {@code action} inside a frame reached from the top-level document through
+     * {@code path} (outermost frame first), then always comes back to the top-level
+     * document, even when the action fails.
+     */
+    protected <T> T inFrame(Supplier<T> action, By... path) {
+        driver.switchTo().defaultContent();
+        try {
+            for (By frame : path) {
+                wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(frame));
+            }
+            log.debug("Inside frame {}", Arrays.toString(path));
+            return action.get();
+        } finally {
+            driver.switchTo().defaultContent();
+        }
+    }
+
+    // --- JavaScript dialogs (alert, confirm, prompt) ---------------------------------
+
+    protected Alert dialog() {
+        return wait.until(ExpectedConditions.alertIsPresent());
+    }
+
+    // --- File upload ------------------------------------------------------------------
+
+    /** Selects a local file in an {@code <input type="file">}; the input may be hidden. */
+    protected void upload(By fileInput, Path file) {
+        String absolutePath = file.toAbsolutePath().toString();
+        log.debug("Upload {} into {}", absolutePath, fileInput);
+        wait.until(ExpectedConditions.presenceOfElementLocated(fileInput)).sendKeys(absolutePath);
     }
 }

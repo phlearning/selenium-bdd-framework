@@ -3,6 +3,7 @@ package io.github.phlearning.bdd.hooks;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
+import io.github.phlearning.bdd.driver.BrowserSession;
 import io.github.phlearning.bdd.driver.DriverManager;
 import io.github.phlearning.bdd.logging.ScenarioLogAppender;
 import org.openqa.selenium.OutputType;
@@ -41,7 +42,12 @@ public class ScenarioHooks {
         if (!scenario.isFailed()) {
             return;
         }
-        driverManager.current().ifPresent(driver -> attachBrowserState(scenario, driver));
+        var sessions = driverManager.startedSessions();
+        // With a single browser the attachments keep short names; with several, each is suffixed with its browser.
+        boolean several = sessions.size() > 1;
+        for (BrowserSession session : sessions) {
+            attachBrowserState(scenario, session.driver(), several ? " (" + session.name() + ")" : "");
+        }
     }
 
     @After(order = 100)
@@ -54,21 +60,21 @@ public class ScenarioHooks {
         MDC.remove("scenario");
     }
 
-    private static void attachBrowserState(Scenario scenario, WebDriver driver) {
+    private static void attachBrowserState(Scenario scenario, WebDriver driver, String suffix) {
         // Each piece is collected independently: a crashed browser may still give some of them.
         try {
-            scenario.attach(driver.getCurrentUrl().getBytes(StandardCharsets.UTF_8), "text/uri-list", "URL");
+            scenario.attach(driver.getCurrentUrl().getBytes(StandardCharsets.UTF_8), "text/uri-list", "URL" + suffix);
         } catch (WebDriverException e) {
             LOG.warn("Could not read the current URL: {}", e.getMessage());
         }
         try {
             byte[] screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-            scenario.attach(screenshot, "image/png", "Screenshot");
+            scenario.attach(screenshot, "image/png", "Screenshot" + suffix);
         } catch (WebDriverException e) {
             LOG.warn("Could not take a screenshot: {}", e.getMessage());
         }
         try {
-            scenario.attach(driver.getPageSource().getBytes(StandardCharsets.UTF_8), "text/html", "Page source");
+            scenario.attach(driver.getPageSource().getBytes(StandardCharsets.UTF_8), "text/html", "Page source" + suffix);
         } catch (WebDriverException e) {
             LOG.warn("Could not read the page source: {}", e.getMessage());
         }

@@ -2,15 +2,16 @@
 
 Framework d'automatisation de tests UI en **Java 21 · Selenium 4 · Cucumber 7 (Gherkin en français) · JUnit 5 · Allure**.
 
-> 🚧 Construction par jalons - état actuel : **jalon 2 (robustesse)**. Voir la [feuille de route](#feuille-de-route).
+> 🚧 Construction par jalons - état actuel : **jalon 3 (multi-onglets, multi-fenêtres, multi-navigateurs)**. Voir la [feuille de route](#feuille-de-route).
 
 ## Démarrage rapide
 
-Prérequis : **JDK 21**. Maven, les drivers et même le navigateur Chrome sont téléchargés automatiquement
-(Maven Wrapper + Selenium Manager).
+Prérequis : **JDK 21** et **Docker**. Maven, les drivers et même le navigateur Chrome sont téléchargés
+automatiquement (Maven Wrapper + Selenium Manager).
 
 ```bash
 cp .env.example .env          # puis renseigner les identifiants de démo
+docker compose up -d          # démarre l'application the-internet en local (port 7080)
 ./mvnw test                   # tous les scénarios (hors @wip), Chrome visible
 ./mvnw allure:serve           # ouvre le rapport Allure
 ```
@@ -20,17 +21,17 @@ Exemples :
 ```bash
 ./mvnw test -Dcucumber.filter.tags="@smoke"          # filtrer par tags
 ./mvnw test -Dbrowser=firefox -Dheadless=true        # autre navigateur, sans interface
-./mvnw test -Denv=demo -Dbase.url=https://...        # surcharger n'importe quelle clé
+./mvnw test -Dsaucedemo.url=https://...              # surcharger n'importe quelle clé
 ./mvnw test -Dthreads=8                              # nombre de scénarios en parallèle (défaut 4)
 ./mvnw test -DnoRerun                                # un seul passage, pas de rejeu
 ```
 
 ## Configuration
 
-Chaque clé (ex. `base.url`) est résolue dans cet ordre, la première source qui la définit gagne :
+Chaque clé (ex. `saucedemo.url`) est résolue dans cet ordre, la première source qui la définit gagne :
 
-1. propriété système `-Dbase.url=…`
-2. variable d'environnement `BASE_URL`
+1. propriété système `-Dsaucedemo.url=…`
+2. variable d'environnement `SAUCEDEMO_URL`
 3. fichier local `.env` (ignoré par git - modèle : [`.env.example`](.env.example))
 4. `src/test/resources/config/environments/<env>.properties`
 5. `src/test/resources/config/default.properties`
@@ -40,6 +41,8 @@ Aucun secret n'est versionné : les identifiants viennent de `.env` en local et 
 | Clé | Défaut | Rôle |
 |---|---|---|
 | `env` | `demo` | environnement cible |
+| `saucedemo.url` | `https://www.saucedemo.com` | boutique de démo |
+| `the-internet.url` | `http://localhost:7080` | the-internet (Docker local) |
 | `browser` | `chrome` | `chrome` \| `firefox` |
 | `headless` | `false` | navigateur sans interface |
 | `window.width` / `window.height` | `1920` / `1080` | taille de fenêtre |
@@ -52,15 +55,19 @@ Aucun secret n'est versionné : les identifiants viennent de `.env` en local et 
 ```
 src/test/java/io/github/phlearning/bdd/
 ├── config/    Config - résolution des clés (sys props > env > .env > fichiers)
-├── driver/    DriverFactory (options navigateur) · DriverManager (1 navigateur par scénario, démarrage paresseux)
-├── pages/     Page Objects - BasePage centralise les attentes explicites
+├── driver/    DriverFactory (options navigateur) · DriverManager (navigateurs nommés du scénario)
+│              · WindowManager (onglets et fenêtres par alias)
+├── pages/     Page Objects - BasePage : attentes explicites, frames, boîtes de dialogue, upload
+│   ├── saucedemo/   connexion, catalogue, panier
+│   └── internet/    fenêtres, cadres, alertes, téléversement
 ├── steps/     définitions d'étapes Gherkin (FR)
 ├── hooks/     ScenarioHooks (logs, preuves d'échec) · DriverHooks (fermeture) · ReportHooks (infos Allure)
 ├── logging/   ScenarioLogAppender - capture les logs du scénario courant (par thread)
 ├── reporting/ FlakyResultsMarker - marque « flaky » les scénarios réussis au rejeu
 └── runner/    RunCucumberTest (1er passage) · RerunCucumberTest (rejeu des échecs)
 src/test/resources/
-├── features/  scénarios .feature (# language: fr)
+├── features/  scénarios .feature (# language: fr), un dossier par fonctionnalité
+├── testdata/  fichiers de test (téléversement…)
 ├── config/    propriétés par défaut et par environnement
 ├── allure/    catégories d'échec Allure
 └── junit-platform.properties  glue, parallélisation, ressources exclusives
@@ -109,6 +116,43 @@ classé dans la catégorie « Tests instables ». `-DnoRerun` désactive le reje
 Les mots de passe sont saisis via `typeSecret` et n'apparaissent jamais dans les logs.
 Niveaux réglables : `-DLOG_LEVEL=INFO` (fichiers et pièces jointes), `-DCONSOLE_LOG_LEVEL=DEBUG` (console).
 
+## Onglets, fenêtres, cadres et navigateurs multiples
+
+### Onglets et fenêtres
+
+`WindowManager` (un par navigateur) désigne les fenêtres par **alias** plutôt que par identifiant technique.
+La fenêtre de départ s'appelle `principale`.
+
+| Besoin | API | Étape Gherkin |
+|---|---|---|
+| fenêtre ouverte par l'application (lien `target=_blank`, popup) | `openedBy(alias, action)` : attend la nouvelle fenêtre et bascule dessus | `je clique sur le lien qui ouvre la fenêtre "nouvelle"` |
+| nouvel onglet / nouvelle fenêtre | `openTab(alias, url)` · `openWindow(alias, url)` | `j'ouvre un nouvel onglet "alertes" sur la page "/javascript_alerts"` |
+| basculer | `switchTo(alias)` · `switchToTitle(titre)` | `je bascule sur la fenêtre "alertes"` |
+| fermer et revenir à `principale` | `close(alias)` | `je ferme la fenêtre "nouvelle"` |
+
+### Cadres (frames / iframes)
+
+`BasePage.inFrame(action, cadre1, cadre2…)` entre dans des cadres imbriqués (du plus externe au plus interne),
+exécute l'action puis **revient toujours** au document principal, même en cas d'échec.
+
+### Boîtes de dialogue et téléversement
+
+`BasePage.dialog()` attend une boîte `alert` / `confirm` / `prompt` ; `BasePage.upload(input, fichier)` renseigne
+un `<input type="file">` avec un fichier de `src/test/resources/testdata/`.
+
+### Plusieurs navigateurs dans un scénario
+
+`DriverManager` gère des **sessions nommées** : `use("Alice")` démarre (si besoin) puis active le navigateur
+« Alice ». Les Page Objects travaillent toujours sur la session active. En cas d'échec, capture d'écran, URL et
+source HTML sont jointes **pour chaque navigateur** (`Screenshot (Alice)`, `Screenshot (Bob)`…).
+
+```gherkin
+Soit l'utilisateur standard est connecté dans le navigateur "Alice"
+Et l'utilisateur standard est connecté dans le navigateur "Bob"
+Quand dans le navigateur "Alice", j'ajoute le produit "Sauce Labs Backpack" au panier
+Alors dans le navigateur "Bob", le panier est vide
+```
+
 ## Rapports
 
 | Rapport | Emplacement |
@@ -124,12 +168,14 @@ d'échec (assertion, synchronisation, infrastructure, configuration, instables) 
 
 - [x] **1. Socle** - Maven, configuration, gestion des navigateurs, POM, PicoContainer, scénarios `@smoke`, Allure
 - [x] **2. Robustesse** - parallélisation, rejeu des scénarios en échec, captures d'écran, logs
-- [ ] **3. Multi** - onglets, fenêtres, iframes, plusieurs navigateurs par scénario
+- [x] **3. Multi** - onglets, fenêtres, iframes, plusieurs navigateurs par scénario
 - [ ] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / nightly / manuel), rapports
 - [ ] **5. API & qualité** - RestAssured, Spotless/Checkstyle, Dependabot, documentation complète
 - [ ] **6. Jenkins** - `Jenkinsfile` équivalent
 
-## Application testée
+## Applications testées
 
-Boutique de démonstration publique [saucedemo.com](https://www.saucedemo.com) (les identifiants de démo sont
-affichés sur sa page de connexion) et [the-internet](https://the-internet.herokuapp.com) pour les cas techniques.
+| Application | Rôle | Accès |
+|---|---|---|
+| [saucedemo.com](https://www.saucedemo.com) | parcours métier : connexion, catalogue, panier | en ligne ; identifiants de démo affichés sur sa page de connexion |
+| the-internet | cas techniques : fenêtres, cadres, alertes, téléversement | en local via `docker compose up -d` (image `gprestes/the-internet`) |

@@ -27,7 +27,8 @@ public class ReportHooks {
 
             Properties environment = new Properties();
             environment.setProperty("Environment", config.get("env"));
-            environment.setProperty("Base URL", config.get("base.url"));
+            environment.setProperty("saucedemo URL", config.get("saucedemo.url"));
+            environment.setProperty("the-internet URL", config.get("the-internet.url"));
             environment.setProperty("Browser", config.get("browser"));
             environment.setProperty("Headless", config.get("headless"));
             environment.setProperty("Java", System.getProperty("java.version"));

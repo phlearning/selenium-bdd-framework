@@ -1,6 +1,7 @@
-package io.github.phlearning.bdd.pages;
+package io.github.phlearning.bdd.pages.saucedemo;
 
 import io.github.phlearning.bdd.config.Config;
+import io.github.phlearning.bdd.pages.BasePage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
@@ -16,7 +17,7 @@ public class LoginPage extends BasePage {
     }
 
     public LoginPage open() {
-        open(Config.get().get("base.url"));
+        open(Config.get().get("saucedemo.url"));
         visible(USERNAME);
         return this;
     }

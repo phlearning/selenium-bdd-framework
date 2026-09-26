@@ -1,0 +1,14 @@
+# Local copy of the applications under test.
+#   docker compose up -d        then   ./mvnw test
+services:
+  # https://github.com/saucelabs/the-internet - technical cases (windows, frames, alerts, upload).
+  # The public instance is too slow and unreliable to be tested against.
+  the-internet:
+    image: gprestes/the-internet:latest
+    ports:
+      - "7080:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:5000/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
