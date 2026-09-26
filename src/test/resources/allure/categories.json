@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Assertion en échec (défaut produit probable)",
+    "matchedStatuses": ["failed"],
+    "messageRegex": "(?s).*(expected|Expecting|AssertionError).*"
+  },
+  {
+    "name": "Élément introuvable ou délai dépassé (synchronisation / locator)",
+    "matchedStatuses": ["broken", "failed"],
+    "traceRegex": "(?s).*(TimeoutException|NoSuchElementException|StaleElementReferenceException|ElementClickInterceptedException).*"
+  },
+  {
+    "name": "Session navigateur perdue (infrastructure)",
+    "matchedStatuses": ["broken", "failed"],
+    "traceRegex": "(?s).*(SessionNotCreatedException|NoSuchSessionException|UnreachableBrowserException|WebDriverException: .*(crash|disconnected)).*"
+  },
+  {
+    "name": "Configuration manquante",
+    "matchedStatuses": ["broken", "failed"],
+    "messageRegex": "(?s).*Missing configuration.*"
+  },
+  {
+    "name": "Tests instables (réussis après rejeu)",
+    "matchedStatuses": ["passed"],
+    "flaky": true
+  }
+]

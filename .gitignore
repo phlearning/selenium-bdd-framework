@@ -17,3 +17,6 @@ target/
 
 # Allure CLI download and local report history
 .allure/
+
+# Personal Claude Code instructions
+CLAUDE.local.md

@@ -29,6 +29,9 @@
 
         <!-- Runtime switches, overridable with -D (see README) -->
         <cucumber.filter.tags>not @wip</cucumber.filter.tags>
+        <threads>4</threads>
+        <rerun.first-pass.ignore-failures>true</rerun.first-pass.ignore-failures>
+        <rerun.skip>false</rerun.skip>
     </properties>
 
     <dependencyManagement>
@@ -125,14 +128,45 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.version}</version>
                 <configuration>
-                    <includes>
-                        <include>**/RunCucumberTest.java</include>
-                    </includes>
                     <systemPropertyVariables>
                         <cucumber.filter.tags>${cucumber.filter.tags}</cucumber.filter.tags>
+                        <cucumber.execution.parallel.config.fixed.parallelism>${threads}</cucumber.execution.parallel.config.fixed.parallelism>
+                        <cucumber.execution.parallel.config.fixed.max-pool-size>${threads}</cucumber.execution.parallel.config.fixed.max-pool-size>
                         <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
                     </systemPropertyVariables>
                 </configuration>
+                <executions>
+                    <!-- 1st pass: all selected scenarios. Failures are written to target/rerun.txt
+                         and only fail the build when the rerun is disabled (-DnoRerun). -->
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <includes>
+                                <include>**/RunCucumberTest.java</include>
+                            </includes>
+                            <testFailureIgnore>${rerun.first-pass.ignore-failures}</testFailureIgnore>
+                        </configuration>
+                    </execution>
+                    <!-- 2nd pass: only the scenarios listed in target/rerun.txt. Its result decides the build. -->
+                    <execution>
+                        <id>rerun-failed</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${rerun.skip}</skip>
+                            <includes>
+                                <include>**/RerunCucumberTest.java</include>
+                            </includes>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-rerun</reportsDirectory>
+                            <systemPropertyVariables>
+                                <rerun.pass>true</rerun.pass>
+                                <log.file>test-rerun</log.file>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -146,4 +180,20 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- ./mvnw test -DnoRerun : single pass, failures fail the build immediately -->
+        <profile>
+            <id>no-rerun</id>
+            <activation>
+                <property>
+                    <name>noRerun</name>
+                </property>
+            </activation>
+            <properties>
+                <rerun.first-pass.ignore-failures>false</rerun.first-pass.ignore-failures>
+                <rerun.skip>true</rerun.skip>
+            </properties>
+        </profile>
+    </profiles>
 </project>

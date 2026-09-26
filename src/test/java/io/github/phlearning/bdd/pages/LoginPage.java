@@ -23,7 +23,7 @@ public class LoginPage extends BasePage {
 
     public void loginAs(String username, String password) {
         type(USERNAME, username);
-        type(PASSWORD, password);
+        typeSecret(PASSWORD, password);
         click(LOGIN_BUTTON);
     }
 

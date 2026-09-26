@@ -1,11 +1,32 @@
 <configuration>
+    <!-- %X{scenario} is set by ScenarioHooks: it tells parallel scenarios apart in shared outputs -->
+    <property name="PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} [%X{scenario}] - %msg%n"/>
+
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${CONSOLE_LOG_LEVEL:-INFO}</level>
+        </filter>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n</pattern>
+            <pattern>${PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <logger name="io.github.phlearning" level="INFO"/>
+    <!-- Whole pass, all threads (the rerun pass writes test-rerun.log) -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>target/logs/${log.file:-test-run}.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Per scenario, attached to the Allure / Cucumber reports -->
+    <appender name="SCENARIO" class="io.github.phlearning.bdd.logging.ScenarioLogAppender"/>
+
+    <logger name="io.github.phlearning" level="${LOG_LEVEL:-DEBUG}">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="SCENARIO"/>
+    </logger>
     <logger name="org.openqa.selenium" level="WARN"/>
 
     <root level="WARN">
