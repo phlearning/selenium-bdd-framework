@@ -1,0 +1,151 @@
+# Reusable workflow: runs the Cucumber suite once (one browser) and publishes its reports.
+# Called by ci.yml (push / pull request) and regression.yml (nightly / manual).
+name: Run tests
+
+on:
+  workflow_call:
+    inputs:
+      browser:
+        description: chrome | firefox
+        type: string
+        default: chrome
+      tags:
+        description: Cucumber tag expression
+        type: string
+        default: not @wip
+      execution:
+        description: local (browser on the runner, headless) | grid (Selenium Grid in Docker)
+        type: string
+        default: local
+      video:
+        description: Record Grid sessions (videos of failed scenarios are attached to Allure)
+        type: boolean
+        default: false
+      threads:
+        description: Scenarios run in parallel
+        type: number
+        default: 4
+      env:
+        description: Target environment (config/environments/<env>.properties)
+        type: string
+        default: demo
+      report-name:
+        description: Unique name of this run's reports (artifacts and Allure history)
+        type: string
+        required: true
+    secrets:
+      SAUCE_USERNAME:
+        required: true
+      SAUCE_PASSWORD:
+        required: true
+
+jobs:
+  test:
+    name: ${{ inputs.report-name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GRID: ${{ inputs.execution == 'grid' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # Allure CLI + history of previous runs of the same report: trends, flaky detection, retries.
+      - name: Restore Allure history
+        uses: actions/cache/restore@v6
+        with:
+          path: .allure
+          key: allure-${{ inputs.report-name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: allure-${{ inputs.report-name }}-
+
+      - name: Start application under test
+        if: env.GRID == 'false'
+        run: docker compose up -d --wait the-internet
+
+      - name: Start application under test and Selenium Grid
+        if: env.GRID == 'true'
+        run: |
+          # One session per node, plus one spare node for scenarios that drive two browsers.
+          export CHROME_NODES=$(( ${{ inputs.threads }} + 1 )) FIREFOX_NODES=$(( ${{ inputs.threads }} + 1 ))
+          mkdir -p .grid/videos && chmod 777 .grid/videos
+          docker compose --profile grid up -d --wait the-internet selenium-hub ${{ inputs.browser }}
+
+      - name: Run scenarios
+        env:
+          SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
+          SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+          # Grid browsers reach the-internet through the Docker network, local ones through the published port.
+          THE_INTERNET_URL: ${{ env.GRID == 'true' && 'http://the-internet:5000' || 'http://localhost:7080' }}
+        run: >
+          ./mvnw -B test
+          -Denv=${{ inputs.env }}
+          -Dbrowser=${{ inputs.browser }}
+          -Dexecution=${{ inputs.execution }}
+          -Dheadless=${{ env.GRID == 'false' }}
+          -Dvideo=${{ inputs.video }}
+          -Dthreads=${{ inputs.threads }}
+          -Dcucumber.filter.tags="${{ inputs.tags }}"
+
+      - name: Generate Allure report
+        if: ${{ !cancelled() }}
+        run: ./mvnw -B allure:report
+
+      - name: Save Allure history
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v6
+        with:
+          path: .allure
+          key: allure-${{ inputs.report-name }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Test results in the checks and the job summary
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@v6
+        with:
+          report_paths: |
+            target/surefire-reports/TEST-*.xml
+            target/surefire-reports-rerun/TEST-*.xml
+          check_name: |
+            ${{ inputs.report-name }} - 1er passage
+            ${{ inputs.report-name }} - rejeu des échecs
+          include_empty_in_summary: false
+          detailed_summary: true
+          # The build status comes from Maven (the rerun decides); this step only reports.
+          fail_on_failure: false
+          require_tests: false
+
+      - name: Link to the reports
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Rapports - ${{ inputs.report-name }}"
+            echo "Artifacts \`allure-report-${{ inputs.report-name }}\` (ouvrir \`index.html\` via \`allure open\` ou un serveur HTTP)"
+            echo "et \`logs-${{ inputs.report-name }}\` en bas de la page du run."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Allure report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-report-${{ inputs.report-name }}
+          path: target/site/allure-maven-plugin
+          retention-days: 14
+
+      - name: Upload logs and Cucumber reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-${{ inputs.report-name }}
+          path: |
+            target/logs
+            target/cucumber-reports
+            target/rerun*.txt
+          retention-days: 14
+
+      - name: Docker logs
+        if: failure()
+        run: docker compose --profile grid logs --no-color --tail 200

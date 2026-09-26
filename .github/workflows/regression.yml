@@ -1,0 +1,97 @@
+# Full regression: every night on Chrome and Firefox (Selenium Grid, videos), or on demand
+# with any combination of browser, tags, execution mode and environment.
+name: Regression
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: Navigateur
+        type: choice
+        options: [all, chrome, firefox]
+        default: all
+      tags:
+        description: Expression de tags Cucumber
+        type: string
+        default: not @wip
+      execution:
+        description: Exécution
+        type: choice
+        options: [grid, local]
+        default: grid
+      video:
+        description: Vidéos (Grid uniquement)
+        type: boolean
+        default: true
+      threads:
+        description: Scénarios en parallèle
+        type: number
+        default: 3
+      env:
+        description: Environnement cible
+        type: string
+        default: demo
+
+concurrency:
+  group: regression-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  regression:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Scheduled runs have no inputs: they run every browser.
+        browser: ${{ fromJSON(inputs.browser == 'chrome' && '["chrome"]' || inputs.browser == 'firefox' && '["firefox"]' || '["chrome","firefox"]') }}
+    uses: ./.github/workflows/run-tests.yml
+    with:
+      browser: ${{ matrix.browser }}
+      tags: ${{ inputs.tags || 'not @wip' }}
+      execution: ${{ inputs.execution || 'grid' }}
+      video: ${{ github.event_name == 'schedule' || inputs.video }}
+      threads: ${{ inputs.threads || 3 }}
+      env: ${{ inputs.env || 'demo' }}
+      report-name: regression-${{ matrix.browser }}
+    secrets:
+      SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
+      SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+
+  # Publishes the Allure reports of main on GitHub Pages. Disabled until the repository can
+  # serve Pages (public repository, or a paid plan): set the repository variable
+  # PUBLISH_ALLURE_PAGES=true and choose "GitHub Actions" as the Pages source.
+  publish-pages:
+    needs: regression
+    if: ${{ !cancelled() && vars.PUBLISH_ALLURE_PAGES == 'true' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: allure-report-regression-*
+          path: site
+      - name: Index page
+        run: |
+          {
+            echo '<!doctype html><meta charset="utf-8"><title>Rapports Allure</title><h1>Rapports Allure</h1><ul>'
+            for dir in site/allure-report-*/; do
+              name=$(basename "$dir"); echo "<li><a href=\"$name/\">${name#allure-report-}</a></li>"
+            done
+            echo '</ul>'
+          } > site/index.html
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -5,11 +5,16 @@ import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Owns the browsers of one scenario. PicoContainer creates one instance per scenario,
@@ -68,8 +73,16 @@ public class DriverManager {
 
     private BrowserSession start(String name) {
         LOG.info("Starting browser '{}'", name);
-        WebDriver driver = DriverFactory.create(config);
+        // One download folder per browser: parallel scenarios never see each other's files.
+        Path downloadDir = Path.of(config.get("downloads.dir"), UUID.randomUUID().toString());
+        try {
+            Files.createDirectories(downloadDir);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot create download folder " + downloadDir, e);
+        }
+        WebDriver driver = DriverFactory.create(config, downloadDir);
         Duration timeout = Duration.ofSeconds(config.getInt("timeout.explicit"));
-        return new BrowserSession(name, driver, new WindowManager(driver, timeout));
+        return new BrowserSession(name, driver, new WindowManager(driver, timeout),
+                new Downloads(driver, downloadDir, DriverFactory.isGrid(config), timeout));
     }
 }

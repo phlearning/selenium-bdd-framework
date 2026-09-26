@@ -2,7 +2,10 @@
 
 Framework d'automatisation de tests UI en **Java 21 · Selenium 4 · Cucumber 7 (Gherkin en français) · JUnit 5 · Allure**.
 
-> 🚧 Construction par jalons - état actuel : **jalon 3 (multi-onglets, multi-fenêtres, multi-navigateurs)**. Voir la [feuille de route](#feuille-de-route).
+[![CI](https://github.com/phlearning/selenium-bdd-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/phlearning/selenium-bdd-framework/actions/workflows/ci.yml)
+[![Regression](https://github.com/phlearning/selenium-bdd-framework/actions/workflows/regression.yml/badge.svg)](https://github.com/phlearning/selenium-bdd-framework/actions/workflows/regression.yml)
+
+> 🚧 Construction par jalons - état actuel : **jalon 4 (Selenium Grid et CI)**. Voir la [feuille de route](#feuille-de-route).
 
 ## Démarrage rapide
 
@@ -24,6 +27,13 @@ Exemples :
 ./mvnw test -Dsaucedemo.url=https://...              # surcharger n'importe quelle clé
 ./mvnw test -Dthreads=8                              # nombre de scénarios en parallèle (défaut 4)
 ./mvnw test -DnoRerun                                # un seul passage, pas de rejeu
+```
+
+Sur la Selenium Grid (Docker) :
+
+```bash
+docker compose --profile grid up -d --wait           # hub + 4 nœuds Chrome + 4 nœuds Firefox
+./mvnw test -Dexecution=grid -Dvideo=true -Dthe-internet.url=http://the-internet:5000
 ```
 
 ## Configuration
@@ -48,6 +58,11 @@ Aucun secret n'est versionné : les identifiants viennent de `.env` en local et 
 | `window.width` / `window.height` | `1920` / `1080` | taille de fenêtre |
 | `timeout.explicit` | `10` | attente explicite (s) |
 | `timeout.page.load` | `30` | chargement de page (s) |
+| `execution` | `local` | `local` (navigateur sur la machine) \| `grid` (Selenium Grid) |
+| `grid.url` | `http://localhost:4444` | adresse du hub |
+| `video` | `false` | enregistre les sessions Grid ; vidéo jointe aux scénarios en échec |
+| `video.dir` / `timeout.video` | `.grid/videos` / `30` | dossier des vidéos (monté dans les nœuds), attente de finalisation (s) |
+| `downloads.dir` | `target/downloads` | téléchargements des navigateurs locaux (un sous-dossier par navigateur) |
 | `sauce.username` / `sauce.password` | - | identifiants de la boutique de démo |
 
 ## Architecture
@@ -55,15 +70,15 @@ Aucun secret n'est versionné : les identifiants viennent de `.env` en local et 
 ```
 src/test/java/io/github/phlearning/bdd/
 ├── config/    Config - résolution des clés (sys props > env > .env > fichiers)
-├── driver/    DriverFactory (options navigateur) · DriverManager (navigateurs nommés du scénario)
-│              · WindowManager (onglets et fenêtres par alias)
+├── driver/    DriverFactory (local ou Grid) · DriverManager (navigateurs nommés du scénario)
+│              · WindowManager (onglets et fenêtres par alias) · Downloads (local ou Grid)
 ├── pages/     Page Objects - BasePage : attentes explicites, frames, boîtes de dialogue, upload
 │   ├── saucedemo/   connexion, catalogue, panier
 │   └── internet/    fenêtres, cadres, alertes, téléversement
 ├── steps/     définitions d'étapes Gherkin (FR)
 ├── hooks/     ScenarioHooks (logs, preuves d'échec) · DriverHooks (fermeture) · ReportHooks (infos Allure)
 ├── logging/   ScenarioLogAppender - capture les logs du scénario courant (par thread)
-├── reporting/ FlakyResultsMarker - marque « flaky » les scénarios réussis au rejeu
+├── reporting/ FlakyResultsMarker (scénarios réussis au rejeu) · GridVideos (vidéo d'une session Grid)
 └── runner/    RunCucumberTest (1er passage) · RerunCucumberTest (rejeu des échecs)
 src/test/resources/
 ├── features/  scénarios .feature (# language: fr), un dossier par fonctionnalité
@@ -135,10 +150,14 @@ La fenêtre de départ s'appelle `principale`.
 `BasePage.inFrame(action, cadre1, cadre2…)` entre dans des cadres imbriqués (du plus externe au plus interne),
 exécute l'action puis **revient toujours** au document principal, même en cas d'échec.
 
-### Boîtes de dialogue et téléversement
+### Boîtes de dialogue et fichiers
 
 `BasePage.dialog()` attend une boîte `alert` / `confirm` / `prompt` ; `BasePage.upload(input, fichier)` renseigne
-un `<input type="file">` avec un fichier de `src/test/resources/testdata/`.
+un `<input type="file">` avec un fichier de `src/test/resources/testdata/`. `Downloads.waitFor(nom)` attend la fin
+d'un téléchargement et renvoie le fichier local.
+
+Les deux fonctionnent aussi sur la Grid : le fichier à envoyer est transmis au nœud (`LocalFileDetector`), le fichier
+téléchargé est rapatrié depuis le nœud (*managed downloads* de la Grid).
 
 ### Plusieurs navigateurs dans un scénario
 
@@ -152,6 +171,41 @@ Et l'utilisateur standard est connecté dans le navigateur "Bob"
 Quand dans le navigateur "Alice", j'ajoute le produit "Sauce Labs Backpack" au panier
 Alors dans le navigateur "Bob", le panier est vide
 ```
+
+## Selenium Grid
+
+`docker compose --profile grid up -d --wait` démarre un hub et des nœuds Chrome / Firefox
+(`CHROME_NODES` / `FIREFOX_NODES`, 4 par défaut). Chaque nœud n'accepte **qu'une session** : un navigateur par
+écran, donc une vidéo lisible par session. Prévoir au moins `threads + 1` nœuds (un scénario peut piloter deux
+navigateurs).
+
+- Les navigateurs de la Grid joignent the-internet par le réseau Docker : `-Dthe-internet.url=http://the-internet:5000`
+  (ou `THE_INTERNET_URL` dans `.env`).
+- Avec `-Dvideo=true`, chaque session est enregistrée (`se:recordVideo`) dans `.grid/videos/<sessionId>.mp4`.
+  La vidéo de chaque navigateur d'un scénario en échec est jointe au rapport Allure. Pas de vidéo en headless.
+- Console de la Grid : <http://localhost:4444> (sessions en cours, VNC).
+
+## Intégration continue (GitHub Actions)
+
+| Workflow | Déclencheur | Contenu |
+|---|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | push sur `main`, pull request | `@smoke`, Chrome headless sur le runner |
+| [`regression.yml`](.github/workflows/regression.yml) | chaque nuit (02:00 UTC) | tout sauf `@wip`, Chrome **et** Firefox en parallèle (matrice), Grid Docker, vidéos |
+| [`regression.yml`](.github/workflows/regression.yml) | manuel (*Run workflow*) | navigateur, tags, local / Grid, vidéos, threads, environnement au choix |
+
+Les deux s'appuient sur le workflow réutilisable [`run-tests.yml`](.github/workflows/run-tests.yml) :
+
+- démarre the-internet (et la Grid si besoin) avec `docker compose`, lance `./mvnw test` avec le rejeu des échecs ;
+- publie les résultats JUnit dans les *checks* et le résumé du job (1er passage et rejeu séparés) ;
+- génère le rapport Allure en conservant l'**historique** d'un run à l'autre (cache GitHub Actions) : tendances,
+  tests instables, rejeux ;
+- dépose en *artifacts* le rapport Allure, les logs et les rapports Cucumber (14 jours).
+
+Identifiants : secrets `SAUCE_USERNAME` et `SAUCE_PASSWORD` du dépôt.
+
+**GitHub Pages** : le job `publish-pages` de `regression.yml` publie les rapports Allure de `main`. Il est désactivé
+tant que le dépôt ne peut pas servir de Pages (dépôt privé sur l'offre gratuite) ; pour l'activer : variable de dépôt
+`PUBLISH_ALLURE_PAGES=true` et source Pages « GitHub Actions ».
 
 ## Rapports
 
@@ -169,7 +223,7 @@ d'échec (assertion, synchronisation, infrastructure, configuration, instables) 
 - [x] **1. Socle** - Maven, configuration, gestion des navigateurs, POM, PicoContainer, scénarios `@smoke`, Allure
 - [x] **2. Robustesse** - parallélisation, rejeu des scénarios en échec, captures d'écran, logs
 - [x] **3. Multi** - onglets, fenêtres, iframes, plusieurs navigateurs par scénario
-- [ ] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / nightly / manuel), rapports
+- [x] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / nightly / manuel), rapports
 - [ ] **5. API & qualité** - RestAssured, Spotless/Checkstyle, Dependabot, documentation complète
 - [ ] **6. Jenkins** - `Jenkinsfile` équivalent
 
