@@ -12,7 +12,6 @@ x-node: &node
       condition: service_healthy
   volumes:
     - ./.grid/videos:/videos
-    - ./target/grid-downloads:/home/seluser/Downloads
   environment: &node-env
     SE_EVENT_BUS_HOST: selenium-hub
     SE_NODE_GRID_URL: http://selenium-hub:4444
