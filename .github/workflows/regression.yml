@@ -54,8 +54,10 @@ jobs:
       browser: ${{ matrix.browser }}
       tags: ${{ inputs.tags || 'not @wip' }}
       execution: ${{ inputs.execution || 'grid' }}
-      video: ${{ github.event_name == 'schedule' || inputs.video }}
-      threads: ${{ inputs.threads || 3 }}
+      # Explicit conversions: the called workflow's boolean / number inputs reject null (scheduled
+      # runs have no inputs) and strings.
+      video: ${{ github.event_name == 'schedule' || format('{0}', inputs.video) == 'true' }}
+      threads: ${{ fromJSON(inputs.threads || '3') }}
       env: ${{ inputs.env || 'demo' }}
       report-name: regression-${{ matrix.browser }}
     secrets:
