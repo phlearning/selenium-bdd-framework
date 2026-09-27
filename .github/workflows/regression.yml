@@ -66,33 +66,89 @@ jobs:
       DUMMYJSON_USERNAME: ${{ secrets.DUMMYJSON_USERNAME }}
       DUMMYJSON_PASSWORD: ${{ secrets.DUMMYJSON_PASSWORD }}
 
-  # Publishes the Allure reports of main on GitHub Pages. Disabled until the repository can
-  # serve Pages (public repository, or a paid plan): set the repository variable
-  # PUBLISH_ALLURE_PAGES=true and choose "GitHub Actions" as the Pages source.
+  # Publishes the Allure reports of main on GitHub Pages: one report per browser, one report
+  # combining them (with its own history) and a home page summing them up. Enabled by the
+  # repository variable PUBLISH_ALLURE_PAGES=true, with "GitHub Actions" as the Pages source
+  # (public repository, or a paid plan: the site of a private repository is public).
   publish-pages:
     needs: regression
     if: ${{ !cancelled() && vars.PUBLISH_ALLURE_PAGES == 'true' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
       - uses: actions/download-artifact@v8
         with:
           pattern: allure-report-regression-*
-          path: site
-      - name: Index page
+          path: reports
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: allure-results-regression-*
+          path: results
+
+      - name: Restore history of the combined report
+        uses: actions/cache/restore@v6
+        with:
+          path: .allure-combined
+          key: allure-combined-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: allure-combined-
+
+      - name: Combined report
         run: |
-          {
-            echo '<!doctype html><meta charset="utf-8"><title>Rapports Allure</title><h1>Rapports Allure</h1><ul>'
-            for dir in site/allure-report-*/; do
-              name=$(basename "$dir"); echo "<li><a href=\"$name/\">${name#allure-report-}</a></li>"
-            done
-            echo '</ul>'
-          } > site/index.html
+          # Same Allure CLI as the per-browser reports
+          version=$(sed -n 's:.*<allure.report.version>\(.*\)</allure.report.version>.*:\1:p' pom.xml)
+          curl -sSfL -o allure.zip \
+            "https://repo.maven.apache.org/maven2/io/qameta/allure/allure-commandline/$version/allure-commandline-$version.zip"
+          unzip -q allure.zip -d "$RUNNER_TEMP"
+
+          sources=()
+          for dir in results/allure-results-regression-*/; do
+            dir=${dir%/}; sources+=("${dir##*-}=$dir")
+          done
+          python3 .github/scripts/combine_allure_results.py combined "${sources[@]}"
+
+          mkdir -p .allure-combined/history
+          cp -r .allure-combined/history combined/
+          cat > combined/executor.json <<EOF
+          {"name": "GitHub Actions", "type": "github", "url": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
+           "buildOrder": $GITHUB_RUN_NUMBER, "buildName": "Régression #$GITHUB_RUN_NUMBER",
+           "buildUrl": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID",
+           "reportName": "Tous les navigateurs"}
+          EOF
+          "$RUNNER_TEMP/allure-$version/bin/allure" generate --clean -o site/tous combined
+
+          rm -rf .allure-combined/history
+          cp -r site/tous/history .allure-combined/
+
+      - name: Save history of the combined report
+        uses: actions/cache/save@v6
+        with:
+          path: .allure-combined
+          key: allure-combined-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Home page
+        env:
+          TEST_TAGS: ${{ inputs.tags || 'not @wip' }}
+        run: |
+          for dir in reports/allure-report-regression-*/; do
+            dir=${dir%/}; mv "$dir" "site/${dir##*-}"
+          done
+          python3 .github/scripts/pages_index.py site \
+            tous="Tous les navigateurs" chrome=Chrome firefox=Firefox
+
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

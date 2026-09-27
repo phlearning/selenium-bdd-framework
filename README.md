@@ -361,11 +361,28 @@ Le workflow réutilisable [`run-tests.yml`](.github/workflows/run-tests.yml) :
   tests instables, rejeux ;
 - dépose en *artifacts* le rapport Allure, les logs et les rapports Cucumber (14 jours).
 
-Secrets du dépôt : `SAUCE_USERNAME`, `SAUCE_PASSWORD`, `DUMMYJSON_USERNAME`, `DUMMYJSON_PASSWORD`.
+Secrets du dépôt : `SAUCE_USERNAME`, `SAUCE_PASSWORD`, `DUMMYJSON_USERNAME`, `DUMMYJSON_PASSWORD`. Ils sont à
+déclarer **deux fois** : en secrets *Actions* et en secrets *Dependabot*, car les runs déclenchés par Dependabot ne
+reçoivent pas les secrets *Actions* (sans eux, la CI de ses PR échoue sur `Missing configuration 'sauce.username'`) :
 
-**GitHub Pages** : le job `publish-pages` de `regression.yml` publie les rapports Allure de `main`. Il est désactivé
-tant que le dépôt ne peut pas servir de Pages (dépôt privé sur l'offre gratuite) ; pour l'activer : variable de dépôt
-`PUBLISH_ALLURE_PAGES=true` et source Pages « GitHub Actions ».
+```bash
+gh secret set SAUCE_USERNAME                    # secret Actions
+gh secret set SAUCE_USERNAME --app dependabot   # secret Dependabot
+```
+
+**GitHub Pages** : le job `publish-pages` de `regression.yml` publie les rapports Allure de la régression de `main`
+sur <https://phlearning.github.io/selenium-bdd-framework/> :
+
+- une **page d'accueil** ([`pages_index.py`](.github/scripts/pages_index.py)) : statut global, taux de réussite et
+  compteurs par rapport, tendance des derniers runs, liens vers le run et le commit ;
+- un **rapport combiné** `tous/` ([`combine_allure_results.py`](.github/scripts/combine_allure_results.py)) : les
+  résultats de tous les navigateurs dans un seul rapport, regroupés par navigateur dans l'onglet *Suites*, avec son
+  propre historique (le même scénario sur deux navigateurs reste deux tests distincts, pas un rejeu) ;
+- un **rapport par navigateur** : `chrome/`, `firefox/`.
+
+Il est piloté par la variable de dépôt `PUBLISH_ALLURE_PAGES=true`, avec « GitHub Actions » comme source Pages.
+Un dépôt privé ne peut servir de Pages qu'avec une offre payante (GitHub Pro ici), et **le site reste public** :
+les rapports ne doivent donc contenir aucune donnée sensible (les secrets y sont masqués, voir [API](#tests-dapi)).
 
 **Dependabot** ([`dependabot.yml`](.github/dependabot.yml)) propose chaque lundi les mises à jour Maven, GitHub
 Actions et images de la Grid, regroupées. Les versions majeures des briques structurantes (Cucumber, JUnit, Allure,

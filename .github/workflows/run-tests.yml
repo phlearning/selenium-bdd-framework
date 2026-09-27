@@ -141,6 +141,15 @@ jobs:
           path: target/site/allure-maven-plugin
           retention-days: 14
 
+      # Raw results, for the report combining every browser (regression.yml, publish-pages)
+      - name: Upload Allure results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-results-${{ inputs.report-name }}
+          path: target/allure-results
+          retention-days: 14
+
       - name: Upload logs and Cucumber reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
