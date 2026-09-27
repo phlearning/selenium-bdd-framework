@@ -74,7 +74,8 @@ public class DriverManager {
     private BrowserSession start(String name) {
         LOG.info("Starting browser '{}'", name);
         // One download folder per browser: parallel scenarios never see each other's files.
-        Path downloadDir = Path.of(config.get("downloads.dir"), UUID.randomUUID().toString());
+        Path downloadDir =
+                Path.of(config.get("downloads.dir"), UUID.randomUUID().toString());
         try {
             Files.createDirectories(downloadDir);
         } catch (IOException e) {
@@ -82,7 +83,10 @@ public class DriverManager {
         }
         WebDriver driver = DriverFactory.create(config, downloadDir);
         Duration timeout = Duration.ofSeconds(config.getInt("timeout.explicit"));
-        return new BrowserSession(name, driver, new WindowManager(driver, timeout),
+        return new BrowserSession(
+                name,
+                driver,
+                new WindowManager(driver, timeout),
                 new Downloads(driver, downloadDir, DriverFactory.isGrid(config), timeout));
     }
 }

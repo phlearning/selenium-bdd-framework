@@ -38,6 +38,10 @@ on:
         required: true
       SAUCE_PASSWORD:
         required: true
+      DUMMYJSON_USERNAME:
+        required: true
+      DUMMYJSON_PASSWORD:
+        required: true
 
 jobs:
   test:
@@ -79,6 +83,8 @@ jobs:
         env:
           SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
           SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+          DUMMYJSON_USERNAME: ${{ secrets.DUMMYJSON_USERNAME }}
+          DUMMYJSON_PASSWORD: ${{ secrets.DUMMYJSON_PASSWORD }}
           # Grid browsers reach the-internet through the Docker network, local ones through the published port.
           THE_INTERNET_URL: ${{ env.GRID == 'true' && 'http://the-internet:5000' || 'http://localhost:7080' }}
         run: >

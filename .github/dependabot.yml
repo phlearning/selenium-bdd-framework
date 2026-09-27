@@ -1,0 +1,44 @@
+# Weekly dependency updates, grouped to keep the number of pull requests low.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      maven-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Major versions are chosen deliberately (see README, "Versions"): Cucumber 8, JUnit 6,
+      # Allure Java 3 and RestAssured 6 are adopted together, in a dedicated change.
+      - dependency-name: "io.cucumber:*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "org.junit:*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "io.qameta.allure:*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "io.rest-assured:*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "com.fasterxml.jackson.core:*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # Selenium Grid images, kept in line with the Selenium version of the pom
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      selenium-grid:
+        patterns: ["selenium/*"]

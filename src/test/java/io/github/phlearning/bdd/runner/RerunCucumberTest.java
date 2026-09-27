@@ -18,8 +18,9 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @Suite(failIfNoTests = false)
 @IncludeEngines("cucumber")
 @SelectFile("target/rerun.txt")
-@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = RunCucumberTest.COMMON_PLUGINS
-        + ", html:target/cucumber-reports/cucumber-rerun.html"
-        + ", rerun:target/rerun-still-failing.txt")
-public class RerunCucumberTest {
-}
+@ConfigurationParameter(
+        key = PLUGIN_PROPERTY_NAME,
+        value = RunCucumberTest.COMMON_PLUGINS
+                + ", html:target/cucumber-reports/cucumber-rerun.html"
+                + ", rerun:target/rerun-still-failing.txt")
+public class RerunCucumberTest {}

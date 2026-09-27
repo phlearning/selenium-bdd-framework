@@ -32,8 +32,7 @@ public final class DriverFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(DriverFactory.class);
 
-    private DriverFactory() {
-    }
+    private DriverFactory() {}
 
     /**
      * @param downloadDir where a local browser saves downloads; ignored on the Grid,

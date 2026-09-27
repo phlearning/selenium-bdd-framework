@@ -15,9 +15,11 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @Suite
 @IncludeEngines("cucumber")
 @SelectPackages("features")
-@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = RunCucumberTest.COMMON_PLUGINS
-        + ", html:target/cucumber-reports/cucumber.html"
-        + ", rerun:target/rerun.txt")
+@ConfigurationParameter(
+        key = PLUGIN_PROPERTY_NAME,
+        value = RunCucumberTest.COMMON_PLUGINS
+                + ", html:target/cucumber-reports/cucumber.html"
+                + ", rerun:target/rerun.txt")
 public class RunCucumberTest {
 
     static final String COMMON_PLUGINS = "pretty, io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm";

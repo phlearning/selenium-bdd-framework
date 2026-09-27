@@ -63,6 +63,8 @@ jobs:
     secrets:
       SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
       SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+      DUMMYJSON_USERNAME: ${{ secrets.DUMMYJSON_USERNAME }}
+      DUMMYJSON_PASSWORD: ${{ secrets.DUMMYJSON_PASSWORD }}
 
   # Publishes the Allure reports of main on GitHub Pages. Disabled until the repository can
   # serve Pages (public repository, or a paid plan): set the repository variable

@@ -11,8 +11,8 @@ public enum BrowserType {
         try {
             return valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Unsupported browser '%s', expected one of %s"
-                    .formatted(value, Arrays.toString(values())), e);
+            throw new IllegalArgumentException(
+                    "Unsupported browser '%s', expected one of %s".formatted(value, Arrays.toString(values())), e);
         }
     }
 }

@@ -26,8 +26,9 @@ public class InventoryPage extends BasePage {
     }
 
     public void addToCart(String productName) {
-        click(By.xpath("//*[@data-test='inventory-item'][.//*[@data-test='inventory-item-name' and normalize-space()='%s']]//button"
-                .formatted(productName)));
+        click(By.xpath(
+                "//*[@data-test='inventory-item'][.//*[@data-test='inventory-item-name' and normalize-space()='%s']]//button"
+                        .formatted(productName)));
     }
 
     /** Number shown on the cart icon; the badge is absent when the cart is empty. */

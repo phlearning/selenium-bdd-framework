@@ -16,7 +16,25 @@ permissions:
   checks: write
 
 jobs:
+  # Formatting and coding rules: fails fast, before any browser starts.
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Formatting (fix locally with ./mvnw spotless:apply)
+        run: ./mvnw -B spotless:check
+      - name: Coding rules
+        run: ./mvnw -B checkstyle:check
+      - name: Compilation
+        run: ./mvnw -B test-compile
+
   smoke:
+    needs: quality
     uses: ./.github/workflows/run-tests.yml
     with:
       browser: chrome
@@ -27,3 +45,5 @@ jobs:
     secrets:
       SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
       SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+      DUMMYJSON_USERNAME: ${{ secrets.DUMMYJSON_USERNAME }}
+      DUMMYJSON_PASSWORD: ${{ secrets.DUMMYJSON_PASSWORD }}

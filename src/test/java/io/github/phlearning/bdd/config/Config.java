@@ -48,15 +48,17 @@ public final class Config {
     }
 
     public Optional<String> find(String key) {
-        return lookupOverride(key).or(() -> Optional.ofNullable(fileProperties.getProperty(key)))
+        return lookupOverride(key)
+                .or(() -> Optional.ofNullable(fileProperties.getProperty(key)))
                 .map(String::trim)
                 .filter(value -> !value.isEmpty());
     }
 
     public String get(String key) {
-        return find(key).orElseThrow(() -> new IllegalStateException(
-                "Missing configuration '%s' (system property, env var %s, .env or properties file)"
-                        .formatted(key, toEnvName(key))));
+        return find(key)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Missing configuration '%s' (system property, env var %s, .env or properties file)"
+                                .formatted(key, toEnvName(key))));
     }
 
     public int getInt(String key) {
