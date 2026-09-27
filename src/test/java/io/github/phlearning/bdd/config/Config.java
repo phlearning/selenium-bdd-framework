@@ -5,6 +5,8 @@ import io.github.cdimascio.dotenv.Dotenv;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
@@ -63,6 +65,15 @@ public final class Config {
 
     public int getInt(String key) {
         return Integer.parseInt(get(key));
+    }
+
+    /** Comma-separated values, trimmed; empty when the key is missing or blank. */
+    public List<String> getList(String key) {
+        return find(key).stream()
+                .flatMap(value -> Arrays.stream(value.split(",")))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList();
     }
 
     public boolean getBoolean(String key) {

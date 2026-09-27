@@ -24,6 +24,7 @@
         <dotenv.version>3.2.0</dotenv.version>
         <rest-assured.version>5.5.7</rest-assured.version>
         <jackson.version>2.22.3</jackson.version>
+        <axe-core.version>4.13.0</axe-core.version>
 
         <surefire.version>3.6.0</surefire.version>
         <compiler.version>3.16.0</compiler.version>
@@ -99,6 +100,21 @@
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-cucumber7-jvm</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Accessibility audits (axe-core by Deque), run inside the page under test -->
+        <dependency>
+            <groupId>com.deque.html.axe-core</groupId>
+            <artifactId>selenium</artifactId>
+            <version>${axe-core.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <!-- Selenium comes from selenium-java above, in the project's version -->
+                <exclusion>
+                    <groupId>org.seleniumhq.selenium</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

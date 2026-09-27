@@ -1,5 +1,6 @@
 package io.github.phlearning.bdd.driver;
 
+import io.github.phlearning.bdd.config.Config;
 import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WindowType;
@@ -31,6 +32,7 @@ public class WindowManager {
     private final WebDriver driver;
     private final WebDriverWait wait;
     private final Map<String, String> handlesByAlias = new LinkedHashMap<>();
+    private final DemoMode demo = DemoMode.from(Config.get());
 
     public WindowManager(WebDriver driver, Duration timeout) {
         this.driver = driver;
@@ -54,6 +56,7 @@ public class WindowManager {
         register(alias, handle);
         driver.switchTo().window(handle);
         LOG.info("Window '{}' opened by the application, switched to it", alias);
+        demo.pause(driver);
     }
 
     public void openTab(String alias, String url) {
@@ -69,11 +72,13 @@ public class WindowManager {
         register(alias, driver.getWindowHandle());
         LOG.info("New {} '{}' opened on {}", type.name().toLowerCase(), alias, url);
         driver.get(url);
+        demo.pause(driver);
     }
 
     public void switchTo(String alias) {
         driver.switchTo().window(handleOf(alias));
         LOG.info("Switched to window '{}'", alias);
+        demo.pause(driver);
     }
 
     /** Switches to the first window whose document title equals {@code title}, waiting for it to exist. */
@@ -89,6 +94,7 @@ public class WindowManager {
             return false;
         });
         LOG.info("Switched to window titled '{}'", title);
+        demo.pause(driver);
     }
 
     /** Closes the window {@code alias} and switches back to {@link #MAIN}. */

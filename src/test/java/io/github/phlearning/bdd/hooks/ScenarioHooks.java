@@ -3,6 +3,7 @@ package io.github.phlearning.bdd.hooks;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
+import io.github.phlearning.bdd.driver.BrowserNetwork.FailedRequest;
 import io.github.phlearning.bdd.driver.BrowserSession;
 import io.github.phlearning.bdd.driver.DriverManager;
 import io.github.phlearning.bdd.logging.ScenarioLogAppender;
@@ -15,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Evidence collection around each scenario. {@code @After} hooks run from the highest
@@ -46,7 +49,9 @@ public class ScenarioHooks {
         // With a single browser the attachments keep short names; with several, each is suffixed with its browser.
         boolean several = sessions.size() > 1;
         for (BrowserSession session : sessions) {
-            attachBrowserState(scenario, session.driver(), several ? " (" + session.name() + ")" : "");
+            String suffix = several ? " (" + session.name() + ")" : "";
+            attachBrowserState(scenario, session.driver(), suffix);
+            attachBiDiEvents(scenario, session, suffix);
         }
     }
 
@@ -58,6 +63,22 @@ public class ScenarioHooks {
             scenario.attach(logs.getBytes(StandardCharsets.UTF_8), "text/plain", "Logs");
         }
         MDC.remove("scenario");
+    }
+
+    /** What WebDriver BiDi saw during the scenario: often the cause of a failure seen in the page. */
+    private static void attachBiDiEvents(Scenario scenario, BrowserSession session, String suffix) {
+        List<String> errors = session.console().errors();
+        if (!errors.isEmpty()) {
+            scenario.attach(
+                    String.join("\n", errors).getBytes(StandardCharsets.UTF_8),
+                    "text/plain",
+                    "JavaScript errors" + suffix);
+        }
+        List<FailedRequest> failures = session.network().failures();
+        if (!failures.isEmpty()) {
+            String text = failures.stream().map(FailedRequest::toString).collect(Collectors.joining("\n"));
+            scenario.attach(text.getBytes(StandardCharsets.UTF_8), "text/plain", "Failed requests" + suffix);
+        }
     }
 
     private static void attachBrowserState(Scenario scenario, WebDriver driver, String suffix) {

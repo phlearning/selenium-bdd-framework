@@ -3,11 +3,14 @@ package io.github.phlearning.bdd.driver;
 import io.github.phlearning.bdd.config.Config;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.MutableCapabilities;
+import org.openqa.selenium.UnexpectedAlertBehaviour;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.remote.Augmenter;
+import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.LocalFileDetector;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.slf4j.Logger;
@@ -50,6 +53,13 @@ public final class DriverFactory {
             case CHROME -> chromeOptions(headless, localDownloads);
             case FIREFOX -> firefoxOptions(headless, localDownloads);
         };
+        if (config.getBoolean("bidi")) {
+            // WebDriver BiDi: JavaScript errors and network events (BrowserConsole, BrowserNetwork)
+            options.setCapability("webSocketUrl", true);
+        }
+        // Dialogs stay open until a step handles them. With BiDi, the default behaviour
+        // (dismiss and notify) closes them as soon as they open, before any step can see them.
+        options.setCapability(CapabilityType.UNHANDLED_PROMPT_BEHAVIOUR, UnexpectedAlertBehaviour.IGNORE);
 
         WebDriver driver = grid ? remote(config, options, headless) : local(browser, options);
 
@@ -81,7 +91,9 @@ public final class DriverFactory {
                 options.setCapability("se:recordVideo", true);
             }
         }
-        RemoteWebDriver driver = new RemoteWebDriver(gridUrl(config), options);
+        // Augmented: a plain RemoteWebDriver does not expose the BiDi connection opened by the Grid.
+        RemoteWebDriver driver =
+                (RemoteWebDriver) new Augmenter().augment(new RemoteWebDriver(gridUrl(config), options));
         // Files to upload live on this machine: send them to the node before typing their path.
         driver.setFileDetector(new LocalFileDetector());
         LOG.info("Grid session {}", driver.getSessionId());

@@ -112,6 +112,7 @@ public abstract class BasePage {
     protected void open(String url) {
         log.debug("Open {}", url);
         driver.get(url);
+        demo.pause(driver);
     }
 
     // --- Frames -----------------------------------------------------------------------
