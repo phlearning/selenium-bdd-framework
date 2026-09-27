@@ -3,6 +3,9 @@
 #   docker compose up -d --wait                  the-internet only (local browsers)
 #   docker compose --profile grid up -d --wait   + Selenium Grid (hub, Chrome and Firefox nodes)
 #
+# Published ports: THE_INTERNET_PORT (default 7080) and GRID_PORT (default 4444), so that a
+# second stack (the local Jenkins) can run next to this one.
+#
 # Grid sizing: CHROME_NODES / FIREFOX_NODES nodes of one session each (default 4). One session
 # per node keeps one browser per screen, which is what makes per-session videos readable.
 x-node: &node
@@ -32,7 +35,7 @@ services:
   the-internet:
     image: gprestes/the-internet:latest
     ports:
-      - "7080:5000"
+      - "${THE_INTERNET_PORT:-7080}:5000"
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:5000/ || exit 1"]
       interval: 5s
@@ -42,9 +45,7 @@ services:
   selenium-hub:
     image: selenium/hub:4.49.0-20260909
     ports:
-      - "4442:4442"
-      - "4443:4443"
-      - "4444:4444"
+      - "${GRID_PORT:-4444}:4444"
     healthcheck:
       # Hub is up; nodes register afterwards and session requests queue until a node is free.
       test: ["CMD-SHELL", "curl -sf http://localhost:4444/status > /dev/null"]

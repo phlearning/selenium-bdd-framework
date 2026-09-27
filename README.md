@@ -16,7 +16,8 @@ Ce qu'il montre :
   boîtes de dialogue, envoi et téléchargement de fichiers, en local comme sur la Grid.
 - **API** : RestAssured, validation de **schémas JSON**, secrets masqués dans les rapports.
 - **Rapports** Allure avec historique, captures, source HTML, logs du scénario et **vidéo** des échecs.
-- **CI** : contrôle qualité et `@smoke` à chaque PR, régression nocturne Chrome + Firefox sur Selenium Grid.
+- **CI** : contrôle qualité et `@smoke` à chaque PR, régression nocturne Chrome + Firefox sur Selenium Grid,
+  sur GitHub Actions et sur **Jenkins** (`Jenkinsfile`, avec un Jenkins local prêt à l'emploi pour le tester).
 
 ## Sommaire
 
@@ -29,6 +30,7 @@ Ce qu'il montre :
 - [Tests d'API](#tests-dapi)
 - [Selenium Grid et vidéos](#selenium-grid-et-vidéos)
 - [Intégration continue](#intégration-continue)
+- [Jenkins](#jenkins)
 - [Rapports](#rapports)
 - [Qualité du code](#qualité-du-code)
 - [Choix techniques](#choix-techniques)
@@ -369,6 +371,22 @@ tant que le dépôt ne peut pas servir de Pages (dépôt privé sur l'offre grat
 Actions et images de la Grid, regroupées. Les versions majeures des briques structurantes (Cucumber, JUnit, Allure,
 RestAssured) sont exclues : elles se migrent ensemble, volontairement.
 
+## Jenkins
+
+Le [`Jenkinsfile`](Jenkinsfile) reproduit la CI GitHub Actions : qualité puis `@smoke` à chaque commit
+(scrutation), régression nocturne Chrome puis Firefox avec vidéos, lancement manuel paramétré ; résultats JUnit,
+rapport Allure avec historique et artefacts à chaque build. Les navigateurs tournent sur la Selenium Grid lancée
+par `docker compose` : l'agent n'a besoin que de Java 21 et de Docker.
+
+Pour le tester, un Jenkins local entièrement configuré par le code (plugins, identifiants, outil Allure, job) :
+
+```bash
+jenkins/start.sh             # http://localhost:8080, utilisateur admin, mot de passe JENKINS_ADMIN_PASSWORD du .env
+jenkins/stop.sh              # arrêt (--purge pour repartir de zéro)
+```
+
+Détails, schéma et validation du `Jenkinsfile` par le linter de Jenkins : [`jenkins/README.md`](jenkins/README.md).
+
 ## Rapports
 
 | Rapport | Emplacement |
@@ -405,6 +423,7 @@ Les deux sont vérifiés par la CI avant tout test. Au-delà des règles classiq
 | **Nœuds Grid à une session** | une vidéo lisible par session ; la capacité se règle par le nombre de nœuds |
 | **the-internet en Docker** plutôt que l'instance publique | l'instance publique répond trop lentement ou pas du tout : des tests dessus seraient instables par nature |
 | **Filtre de rapport d'API maison** plutôt que `allure-rest-assured` | masquer les secrets dans les corps de requêtes **et de réponses** |
+| **Jenkins configuré par le code** (JCasC + Job DSL) | un Jenkins reproductible en une commande : le `Jenkinsfile` se teste réellement, pas seulement sa syntaxe |
 | **Gherkin en français, code en anglais** | scénarios lisibles par le métier, code aux conventions habituelles |
 
 ## Feuille de route
@@ -414,7 +433,7 @@ Les deux sont vérifiés par la CI avant tout test. Au-delà des règles classiq
 - [x] **3. Multi** - onglets, fenêtres, iframes, plusieurs navigateurs par scénario
 - [x] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / nightly / manuel), rapports
 - [x] **5. API & qualité** - RestAssured, schémas JSON, Spotless, Checkstyle, Dependabot, documentation
-- [ ] **6. Jenkins** - `Jenkinsfile` équivalent
+- [x] **6. Jenkins** - `Jenkinsfile` équivalent, Jenkins local configuré par le code pour le tester
 
 ## Applications testées
 
