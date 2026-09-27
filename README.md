@@ -382,6 +382,7 @@ Pour le tester, un Jenkins local entièrement configuré par le code (plugins, i
 
 ```bash
 jenkins/start.sh             # http://localhost:8080, utilisateur admin, mot de passe JENKINS_ADMIN_PASSWORD du .env
+jenkins/stop.sh              # arrêt (--purge pour repartir de zéro)
 ```
 
 Détails, schéma et validation du `Jenkinsfile` par le linter de Jenkins : [`jenkins/README.md`](jenkins/README.md).

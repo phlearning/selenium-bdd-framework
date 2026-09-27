@@ -16,8 +16,12 @@ JENKINS_BRANCH=ma-branche jenkins/start.sh         # job sur une autre branche (
 
 Jenkins : <http://localhost:8080>, utilisateur `admin`, mot de passe `JENKINS_ADMIN_PASSWORD` du `.env`.
 
-Arrêter : `docker compose -f jenkins/docker-compose.yml down` (les données restent dans `jenkins/.data/`,
-à supprimer pour repartir de zéro).
+Arrêter :
+
+```bash
+jenkins/stop.sh              # les données restent dans jenkins/.data/
+jenkins/stop.sh --purge      # supprime aussi jenkins/.data/ : le prochain démarrage repart de zéro
+```
 
 ## Le job `selenium-bdd-framework`
 
