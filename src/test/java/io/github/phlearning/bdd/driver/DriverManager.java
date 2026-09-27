@@ -87,6 +87,8 @@ public class DriverManager {
                 name,
                 driver,
                 new WindowManager(driver, timeout),
-                new Downloads(driver, downloadDir, DriverFactory.isGrid(config), timeout));
+                new Downloads(driver, downloadDir, DriverFactory.isGrid(config), timeout),
+                BrowserConsole.listen(driver, config.getList("console.ignore")),
+                BrowserNetwork.listen(driver));
     }
 }

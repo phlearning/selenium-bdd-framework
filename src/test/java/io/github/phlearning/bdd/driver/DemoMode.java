@@ -10,7 +10,7 @@ import java.time.Duration;
 
 /**
  * Demo mode ({@code -Ddemo=true}): outlines each element before it is used and pauses after
- * each step, so that a person watching the browser (or its Grid video) can follow the
+ * each action (page load, element, window), so that a person watching the browser (or its Grid video) can follow the
  * scenario. Every method is a no-op when the mode is off.
  */
 public final class DemoMode {

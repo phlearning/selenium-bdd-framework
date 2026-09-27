@@ -49,6 +49,8 @@ pipeline {
         GRID_PORT = '14444'
         THE_INTERNET_PORT = '17080'
         GRID_URL = "http://host.docker.internal:${GRID_PORT}"
+        // Address of the Grid in the WebSocket URLs (BiDi) handed out by the nodes: seen from this agent
+        GRID_PUBLIC_URL = "http://host.docker.internal:${GRID_PORT}"
         // Seen from the Grid browsers, through the Docker network
         THE_INTERNET_URL = 'http://the-internet:5000'
     }

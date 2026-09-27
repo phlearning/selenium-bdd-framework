@@ -15,7 +15,10 @@ Ce qu'il montre :
 - **Multi** : onglets et fenêtres par alias, cadres imbriqués, **plusieurs navigateurs dans un même scénario**,
   boîtes de dialogue, envoi et téléchargement de fichiers, en local comme sur la Grid.
 - **API** : RestAssured, validation de **schémas JSON**, secrets masqués dans les rapports.
-- **Rapports** Allure avec historique, captures, source HTML, logs du scénario et **vidéo** des échecs.
+- **Au-delà du fonctionnel** : **accessibilité** (axe-core, WCAG 2.1 AA), **erreurs JavaScript et réseau** captées
+  par WebDriver BiDi, **régression visuelle** par comparaison de captures.
+- **Rapports** Allure avec historique, captures, source HTML, logs du scénario, erreurs JavaScript, requêtes en échec
+  et **vidéo** des échecs.
 - **CI** : contrôle qualité et `@smoke` à chaque PR, régression nocturne Chrome + Firefox sur Selenium Grid,
   sur GitHub Actions et sur **Jenkins** (`Jenkinsfile`, avec un Jenkins local prêt à l'emploi pour le tester).
 
@@ -35,6 +38,7 @@ scénarios filmés sur la Grid en [mode démo](#mode-démo), puis les rapports.
 - [Robustesse](#robustesse)
 - [Onglets, fenêtres, cadres et navigateurs multiples](#onglets-fenêtres-cadres-et-navigateurs-multiples)
 - [Tests d'API](#tests-dapi)
+- [Au-delà du fonctionnel](#au-delà-du-fonctionnel)
 - [Selenium Grid et vidéos](#selenium-grid-et-vidéos)
 - [Intégration continue](#intégration-continue)
 - [Jenkins](#jenkins)
@@ -338,6 +342,65 @@ Scénario: Un utilisateur valide obtient un jeton et consulte son profil
   (en-têtes `Authorization`, champs `password`, `accessToken`…) y compris dans les réponses : le profil renvoyé par
   DummyJSON contient le mot de passe en clair.
 
+## Au-delà du fonctionnel
+
+Trois contrôles de qualité s'ajoutent aux scénarios fonctionnels, chacun exprimé en une étape Gherkin
+([`features/qualite/`](src/test/resources/features/qualite)).
+
+### Accessibilité
+
+[axe-core](https://github.com/dequelabs/axe-core-maven-html) (Deque) audite la page affichée selon les règles
+**WCAG 2.1 niveaux A et AA**. Le détail (règle, gravité, éléments en cause, lien vers la documentation) est joint au
+rapport.
+
+```gherkin
+Alors la page respecte les règles d'accessibilité WCAG 2.1 AA
+```
+
+Une page aux défauts connus et acceptés les liste avec leur raison : toute **autre** règle enfreinte fait échouer le
+scénario, et un écart connu qui disparaît est signalé pour que la liste reste à jour.
+
+```gherkin
+Alors la page respecte les règles d'accessibilité WCAG 2.1 AA, hormis les écarts connus :
+  | règle          | raison                                                                    |
+  | color-contrast | texte d'aide et lien de pied de page trop peu contrastés, défaut du site |
+```
+
+### Erreurs JavaScript et réseau (WebDriver BiDi)
+
+Chaque navigateur ouvre une connexion **WebDriver BiDi** (`bidi=true`, en local comme sur la Grid) :
+
+- les **erreurs JavaScript** (exceptions non interceptées, `console.error`) et les **requêtes en échec** (statut 4xx
+  ou 5xx, pas de réponse) sont collectées dès le démarrage, dans tous les onglets, et **jointes au rapport de tout
+  scénario en échec** : souvent la vraie cause d'un élément qui n'apparaît pas ;
+- des étapes les vérifient (`la console du navigateur ne contient aucune erreur`) ;
+- un scénario peut **faire échouer des requêtes** pour tester la résilience de l'application :
+  `Et les requêtes vers ".jpg" échouent`. Avec Chrome, l'interception s'active une fois la page chargée : ChromeDriver
+  traite une commande à la fois, et une navigation classique attendrait des requêtes que seule une commande
+  suivante pourrait libérer.
+
+Avec BiDi, Chrome fermerait les boîtes de dialogue dès leur ouverture : le framework les laisse ouvertes
+(`unhandledPromptBehavior=ignore`) jusqu'à ce qu'une étape les traite.
+
+### Régression visuelle
+
+La page est comparée **pixel à pixel** à une image de référence versionnée, une par navigateur
+([`src/test/resources/visual/<navigateur>/<nom>.png`](src/test/resources/visual)). Un pixel ne compte comme différent qu'au-delà d'un écart de
+couleur (`visual.tolerance`), et le scénario échoue au-delà d'une proportion de pixels différents
+(`visual.max.differing.ratio`, 0,1 %). En cas d'écart, le rapport Allure affiche la **référence, la capture et les
+différences** en rouge, côte à côte.
+
+```gherkin
+Alors l'apparence de la page est conforme à la référence "boutique-connexion"
+```
+
+Les références sont prises **sur la Grid** (mêmes navigateurs, polices et taille d'écran partout) : les scénarios
+`@visuel` sont ignorés en exécution locale. Après un changement d'apparence voulu, on régénère les références :
+
+```bash
+./mvnw test -Dexecution=grid -Dbrowser=chrome -Dcucumber.filter.tags="@visuel" -Dvisual.update=true
+```
+
 ## Selenium Grid et vidéos
 
 `docker compose --profile grid up -d --wait` démarre un hub et des nœuds Chrome / Firefox
@@ -350,12 +413,14 @@ navigateurs).
 - Avec `-Dvideo=true`, chaque session est enregistrée (`se:recordVideo`) dans `.grid/videos/<sessionId>.mp4`.
   La vidéo de chaque navigateur d'un scénario en échec est jointe au rapport Allure. Pas de vidéo en headless.
 - Console de la Grid : <http://localhost:4444> (sessions en cours, VNC).
+- Les nœuds annoncent aux tests des adresses WebSocket (BiDi, CDP, VNC) construites sur `GRID_PUBLIC_URL`
+  (`http://localhost:<GRID_PORT>` par défaut) : elle doit être joignable depuis la machine qui lance les tests.
 
 ### Mode démo
 
 `-Ddemo=true` rend une exécution lisible par un humain, pour une démonstration ou pour comprendre un échec en
 regardant le navigateur (ou sa vidéo) : chaque élément est **encadré en rouge** avant d'être utilisé, et une pause
-de `demo.delay` ms (700 par défaut) suit chaque action et chaque étape. Les pauses s'exécutent dans le navigateur
+de `demo.delay` ms (700 par défaut) suit chaque action : chargement de page, élément, changement de fenêtre. Les pauses s'exécutent dans le navigateur
 (`setTimeout`), jamais par `Thread.sleep`.
 
 ```bash
@@ -473,6 +538,8 @@ Les deux sont vérifiés par la CI avant tout test. Au-delà des règles classiq
 | **the-internet en Docker** plutôt que l'instance publique | l'instance publique répond trop lentement ou pas du tout : des tests dessus seraient instables par nature |
 | **Filtre de rapport d'API maison** plutôt que `allure-rest-assured` | masquer les secrets dans les corps de requêtes **et de réponses** |
 | **Jenkins configuré par le code** (JCasC + Job DSL) | un Jenkins reproductible en une commande : le `Jenkinsfile` se teste réellement, pas seulement sa syntaxe |
+| **WebDriver BiDi** plutôt que CDP | standard W3C : mêmes fonctions sur Chrome et Firefox, en local comme sur la Grid |
+| **Comparaison d'images maison** plutôt qu'une bibliothèque | une centaine de lignes, sans dépendance ; le rendu du diff est confié à Allure (*screen diff*) |
 | **Gherkin en français, code en anglais** | scénarios lisibles par le métier, code aux conventions habituelles |
 
 ## Feuille de route
@@ -483,7 +550,7 @@ Les deux sont vérifiés par la CI avant tout test. Au-delà des règles classiq
 - [x] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / nightly / manuel), rapports
 - [x] **5. API & qualité** - RestAssured, schémas JSON, Spotless, Checkstyle, Dependabot, documentation
 - [x] **6. Jenkins** - `Jenkinsfile` équivalent, Jenkins local configuré par le code pour le tester
-- [ ] **7. Qualité au-delà du fonctionnel** - accessibilité (axe-core), erreurs console et réseau (Selenium BiDi),
+- [x] **7. Au-delà du fonctionnel** - accessibilité (axe-core), erreurs JavaScript et réseau (WebDriver BiDi),
   régression visuelle
 
 ## Pistes d'évolution
@@ -492,9 +559,7 @@ Ce que le framework pourrait couvrir ensuite, par intérêt décroissant pour un
 
 | Piste | Apport |
 |---|---|
-| **Accessibilité** avec axe-core | contrôle des règles WCAG en une étape Gherkin, violations détaillées dans le rapport |
-| **Selenium BiDi** : erreurs console et interception réseau | erreurs JavaScript jointes aux échecs ; simulation de pannes ou de lenteurs d'API |
-| **Régression visuelle** (comparaison de captures) | détecte les régressions d'affichage que les assertions ne voient pas |
+| **Accessibilité étendue** : parcours complets, clavier, lecteurs d'écran | au-delà de l'audit automatique, qui ne couvre qu'une partie des critères WCAG |
 | **Notifications** Slack ou Teams | résultat de la régression nocturne poussé à l'équipe, avec le lien du rapport |
 | **Quarantaine des tests instables** | tag `@flaky` hors du verdict, suivi de leur stabilité dans le temps |
 | **Grid sur Kubernetes** (chart Helm, autoscaling KEDA) | nœuds créés à la demande selon la file d'attente de sessions |
