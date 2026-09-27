@@ -93,6 +93,8 @@ docker compose --profile grid up -d --wait           # hub + 4 nœuds Chrome + 4
 ./mvnw test -Dexecution=grid -Dvideo=true -Dthe-internet.url=http://the-internet:5000
 ```
 
+Toutes les commandes, du dépôt propre au Jenkins local : [`docs/COMMANDES.md`](docs/COMMANDES.md).
+
 ## Architecture
 
 ```mermaid
