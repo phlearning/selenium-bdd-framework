@@ -23,3 +23,6 @@ CLAUDE.local.md
 
 # Selenium Grid recordings (outside target/ so that mvn clean does not unmount them)
 .grid/
+
+# Local Jenkins data
+jenkins/.data/

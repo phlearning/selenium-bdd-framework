@@ -1,0 +1,55 @@
+# Jenkins configuration as code: everything is created at startup, nothing is set by hand.
+# Values in ${...} come from the environment (jenkins/docker-compose.yml, fed by the project's .env).
+jenkins:
+  systemMessage: "Jenkins local du projet selenium-bdd-framework (voir jenkins/README.md)"
+  numExecutors: 1
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: ${JENKINS_ADMIN_PASSWORD}
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              id: sauce-username
+              secret: ${SAUCE_USERNAME}
+          - string:
+              id: sauce-password
+              secret: ${SAUCE_PASSWORD}
+          - string:
+              id: dummyjson-username
+              secret: ${DUMMYJSON_USERNAME}
+          - string:
+              id: dummyjson-password
+              secret: ${DUMMYJSON_PASSWORD}
+
+tool:
+  allure:
+    installations:
+      - name: allure
+        home: /opt/allure  # installed by jenkins/Dockerfile
+
+jobs:
+  - script: |
+      pipelineJob('selenium-bdd-framework') {
+        description('Pipeline du Jenkinsfile, depuis le dépôt monté dans /repo.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('file:///repo') }
+                branch('${JENKINS_BRANCH}')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(false)
+          }
+        }
+      }

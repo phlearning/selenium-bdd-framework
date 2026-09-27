@@ -1,0 +1,23 @@
+# Local Jenkins. Start it with jenkins/start.sh, which sets the variables below.
+services:
+  jenkins:
+    build: .
+    image: selenium-bdd-framework/jenkins:local
+    ports:
+      - "8080:8080"
+    env_file: ../.env
+    environment:
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?set in .env}
+      JENKINS_BRANCH: ${JENKINS_BRANCH:-main}
+      # JENKINS_HOME is mounted at the same path as on the host: the pipeline runs docker compose
+      # on the host's daemon, which resolves bind mounts (Grid videos) with host paths.
+      JENKINS_HOME: ${JENKINS_DATA:?}
+    volumes:
+      - ${JENKINS_DATA:?}:${JENKINS_DATA:?}
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ..:/repo:ro
+    group_add:
+      - "${DOCKER_GID:?}"
+    extra_hosts:
+      # Grid published on the host, reached from this container
+      - "host.docker.internal:host-gateway"
