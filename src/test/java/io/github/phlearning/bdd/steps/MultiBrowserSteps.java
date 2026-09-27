@@ -34,6 +34,12 @@ public class MultiBrowserSteps {
         assertThat(inventoryIn(browser).title()).isEqualTo("Products");
     }
 
+    @Soit("l'utilisateur standard est connecté sans passer par le formulaire dans le navigateur {string}")
+    public void lUtilisateurStandardEstConnecteSansFormulaire(String browser) {
+        new LoginPage(driverManager.use(browser).driver()).loginBypassingForm(config.get("sauce.username"));
+        assertThat(inventoryIn(browser).title()).isEqualTo("Products");
+    }
+
     @Quand("dans le navigateur {string}, j'ajoute le produit {string} au panier")
     public void dansLeNavigateurJAjouteLeProduitAuPanier(String browser, String product) {
         inventoryIn(browser).addToCart(product);

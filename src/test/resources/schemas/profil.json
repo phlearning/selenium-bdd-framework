@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Profil de l'utilisateur connecté",
+  "type": "object",
+  "required": ["id", "username", "email", "firstName", "lastName"],
+  "properties": {
+    "id": {"type": "integer"},
+    "username": {"type": "string"},
+    "email": {"type": "string"},
+    "firstName": {"type": "string"},
+    "lastName": {"type": "string"}
+  }
+}

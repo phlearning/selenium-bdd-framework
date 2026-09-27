@@ -38,7 +38,8 @@ public class ReportHooks {
                 environment.store(out, null);
             }
 
-            try (InputStream categories = ReportHooks.class.getClassLoader().getResourceAsStream("allure/categories.json")) {
+            try (InputStream categories =
+                    ReportHooks.class.getClassLoader().getResourceAsStream("allure/categories.json")) {
                 if (categories != null) {
                     Files.copy(categories, results.resolve("categories.json"), StandardCopyOption.REPLACE_EXISTING);
                 }

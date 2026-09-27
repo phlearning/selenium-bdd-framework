@@ -74,7 +74,8 @@ public class ScenarioHooks {
             LOG.warn("Could not take a screenshot: {}", e.getMessage());
         }
         try {
-            scenario.attach(driver.getPageSource().getBytes(StandardCharsets.UTF_8), "text/html", "Page source" + suffix);
+            scenario.attach(
+                    driver.getPageSource().getBytes(StandardCharsets.UTF_8), "text/html", "Page source" + suffix);
         } catch (WebDriverException e) {
             LOG.warn("Could not read the page source: {}", e.getMessage());
         }

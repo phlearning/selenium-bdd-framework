@@ -51,7 +51,8 @@ public class FlakyResultsMarker implements TestExecutionListener {
             Map<String, Object> result = read(file);
             Object historyId = result.get("historyId");
             if (historyId != null) {
-                attemptsByHistoryId.computeIfAbsent(historyId.toString(), id -> new ArrayList<>())
+                attemptsByHistoryId
+                        .computeIfAbsent(historyId.toString(), id -> new ArrayList<>())
                         .add(new Attempt(file, result));
             }
         }
@@ -64,8 +65,8 @@ public class FlakyResultsMarker implements TestExecutionListener {
 
     @SuppressWarnings("unchecked")
     private void flagFlaky(Attempt attempt) {
-        Map<String, Object> details = new LinkedHashMap<>(
-                (Map<String, Object>) attempt.result().getOrDefault("statusDetails", Map.of()));
+        Map<String, Object> details =
+                new LinkedHashMap<>((Map<String, Object>) attempt.result().getOrDefault("statusDetails", Map.of()));
         details.put("flaky", true);
         Map<String, Object> patched = new LinkedHashMap<>(attempt.result());
         patched.put("statusDetails", details);
@@ -79,7 +80,8 @@ public class FlakyResultsMarker implements TestExecutionListener {
 
     private static List<Path> resultFiles(Path results) {
         try (Stream<Path> files = Files.list(results)) {
-            return files.filter(f -> f.getFileName().toString().endsWith("-result.json")).toList();
+            return files.filter(f -> f.getFileName().toString().endsWith("-result.json"))
+                    .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

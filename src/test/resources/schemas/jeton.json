@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Réponse d'authentification",
+  "type": "object",
+  "required": ["id", "username", "email", "accessToken", "refreshToken"],
+  "properties": {
+    "id": {"type": "integer"},
+    "username": {"type": "string"},
+    "email": {"type": "string"},
+    "firstName": {"type": "string"},
+    "lastName": {"type": "string"},
+    "accessToken": {"type": "string", "minLength": 20},
+    "refreshToken": {"type": "string", "minLength": 20}
+  }
+}

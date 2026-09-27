@@ -45,11 +45,12 @@ public class WindowManager {
     public void openedBy(String alias, Runnable action) {
         Set<String> before = new HashSet<>(driver.getWindowHandles());
         action.run();
-        String handle = wait.withMessage("no new window opened for '" + alias + "'").until(d -> {
-            Set<String> now = new HashSet<>(d.getWindowHandles());
-            now.removeAll(before);
-            return now.isEmpty() ? null : now.iterator().next();
-        });
+        String handle = wait.withMessage("no new window opened for '" + alias + "'")
+                .until(d -> {
+                    Set<String> now = new HashSet<>(d.getWindowHandles());
+                    now.removeAll(before);
+                    return now.isEmpty() ? null : now.iterator().next();
+                });
         register(alias, handle);
         driver.switchTo().window(handle);
         LOG.info("Window '{}' opened by the application, switched to it", alias);
@@ -122,8 +123,8 @@ public class WindowManager {
     private String handleOf(String alias) {
         String handle = handlesByAlias.get(alias);
         if (handle == null) {
-            throw new NoSuchWindowException("Unknown window alias '%s', known: %s"
-                    .formatted(alias, handlesByAlias.keySet()));
+            throw new NoSuchWindowException(
+                    "Unknown window alias '%s', known: %s".formatted(alias, handlesByAlias.keySet()));
         }
         return handle;
     }

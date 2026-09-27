@@ -48,10 +48,11 @@ public class DriverHooks {
     private void attachVideos(Scenario scenario, Map<String, String> sessionIdsByBrowser) {
         GridVideos videos = new GridVideos(config);
         boolean several = sessionIdsByBrowser.size() > 1;
-        sessionIdsByBrowser.forEach((browser, sessionId) -> videos.find(sessionId).ifPresent(file -> {
-            LOG.info("Attaching video {}", file);
-            scenario.attach(read(file), "video/mp4", "Video" + (several ? " (" + browser + ")" : ""));
-        }));
+        sessionIdsByBrowser.forEach((browser, sessionId) -> videos.find(sessionId)
+                .ifPresent(file -> {
+                    LOG.info("Attaching video {}", file);
+                    scenario.attach(read(file), "video/mp4", "Video" + (several ? " (" + browser + ")" : ""));
+                }));
     }
 
     private static byte[] read(Path file) {

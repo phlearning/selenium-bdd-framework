@@ -44,7 +44,8 @@ public class Downloads {
                 .withMessage("file '" + fileName + "' not downloaded");
         if (grid) {
             HasDownloads downloads = (HasDownloads) driver;
-            wait.until(d -> downloads.getDownloadedFiles().stream().anyMatch(f -> f.getName().equals(fileName)));
+            wait.until(d -> downloads.getDownloadedFiles().stream()
+                    .anyMatch(f -> f.getName().equals(fileName)));
             try {
                 downloads.downloadFile(fileName, directory);
             } catch (IOException e) {
@@ -54,7 +55,8 @@ public class Downloads {
         }
         Path file = directory.resolve(fileName);
         // Browsers write to a temporary file (.crdownload, .part) and rename it once complete.
-        wait.until(d -> Files.exists(file) && !Files.exists(directory.resolve(fileName + ".crdownload"))
+        wait.until(d -> Files.exists(file)
+                && !Files.exists(directory.resolve(fileName + ".crdownload"))
                 && !Files.exists(directory.resolve(fileName + ".part")));
         return file;
     }

@@ -5,8 +5,9 @@ Fonctionnalité: Plusieurs navigateurs dans un même scénario
   par exemple deux clients connectés en même temps.
 
   Scénario: Deux clients connectés en même temps ont chacun leur panier
-    Soit l'utilisateur standard est connecté dans le navigateur "Alice"
-    Et l'utilisateur standard est connecté dans le navigateur "Bob"
+    # Connexion par cookie : le formulaire a ses propres scénarios (auth/connexion.feature).
+    Soit l'utilisateur standard est connecté sans passer par le formulaire dans le navigateur "Alice"
+    Et l'utilisateur standard est connecté sans passer par le formulaire dans le navigateur "Bob"
     Quand dans le navigateur "Alice", j'ajoute le produit "Sauce Labs Backpack" au panier
     Et dans le navigateur "Alice", j'ajoute le produit "Sauce Labs Bike Light" au panier
     Alors dans le navigateur "Alice", le panier contient 2 articles
