@@ -1,6 +1,7 @@
 package io.github.phlearning.bdd.pages;
 
 import io.github.phlearning.bdd.config.Config;
+import io.github.phlearning.bdd.driver.DemoMode;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementClickInterceptedException;
@@ -38,11 +39,14 @@ public abstract class BasePage {
     protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final WebDriver driver;
     protected final WebDriverWait wait;
+    private final DemoMode demo;
 
     protected BasePage(WebDriver driver) {
+        Config config = Config.get();
         this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(Config.get().getInt("timeout.explicit")));
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(config.getInt("timeout.explicit")));
         this.wait.ignoreAll(TRANSIENT);
+        this.demo = DemoMode.from(config);
     }
 
     protected WebElement visible(By locator) {
@@ -52,7 +56,13 @@ public abstract class BasePage {
     protected void click(By locator) {
         log.debug("Click {}", locator);
         wait.withMessage("clickable " + locator).until(d -> {
-            ExpectedConditions.elementToBeClickable(locator).apply(d).click();
+            WebElement element =
+                    ExpectedConditions.elementToBeClickable(locator).apply(d);
+            if (element == null) {
+                return false;
+            }
+            demo.highlight(driver, element);
+            element.click();
             return true;
         });
     }
@@ -61,6 +71,7 @@ public abstract class BasePage {
         log.debug("Type '{}' into {}", text, locator);
         wait.withMessage("typing into " + locator).until(d -> {
             WebElement element = d.findElement(locator);
+            demo.highlight(driver, element);
             element.clear();
             if (!text.isEmpty()) {
                 element.sendKeys(text);
@@ -74,6 +85,7 @@ public abstract class BasePage {
         log.debug("Type ******** into {}", locator);
         wait.withMessage("typing into " + locator).until(d -> {
             WebElement element = d.findElement(locator);
+            demo.highlight(driver, element);
             element.clear();
             if (!secret.isEmpty()) {
                 element.sendKeys(secret);
@@ -85,7 +97,11 @@ public abstract class BasePage {
     protected String textOf(By locator) {
         return wait.withMessage("visible text of " + locator).until(d -> {
             WebElement element = d.findElement(locator);
-            return element.isDisplayed() ? element.getText() : null;
+            if (!element.isDisplayed()) {
+                return null;
+            }
+            demo.highlight(driver, element);
+            return element.getText();
         });
     }
 

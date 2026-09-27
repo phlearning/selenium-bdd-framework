@@ -1,9 +1,11 @@
 package io.github.phlearning.bdd.hooks;
 
 import io.cucumber.java.After;
+import io.cucumber.java.AfterStep;
 import io.cucumber.java.Scenario;
 import io.github.phlearning.bdd.config.Config;
 import io.github.phlearning.bdd.driver.BrowserSession;
+import io.github.phlearning.bdd.driver.DemoMode;
 import io.github.phlearning.bdd.driver.DriverFactory;
 import io.github.phlearning.bdd.driver.DriverManager;
 import io.github.phlearning.bdd.reporting.GridVideos;
@@ -23,9 +25,18 @@ public class DriverHooks {
 
     private final DriverManager driverManager;
     private final Config config = Config.get();
+    private final DemoMode demo = DemoMode.from(config);
 
     public DriverHooks(DriverManager driverManager) {
         this.driverManager = driverManager;
+    }
+
+    /** Demo mode only: a pause after each step, so that each step can be seen in the browser. */
+    @AfterStep
+    public void demoPause() {
+        if (demo.isOn()) {
+            driverManager.startedSessions().stream().findFirst().ifPresent(session -> demo.pause(session.driver()));
+        }
     }
 
     /**
@@ -38,6 +49,9 @@ public class DriverHooks {
         Map<String, String> sessionIdsByBrowser = new LinkedHashMap<>();
         for (BrowserSession session : driverManager.startedSessions()) {
             session.sessionId().ifPresent(id -> sessionIdsByBrowser.put(session.name(), id));
+        }
+        if (!sessionIdsByBrowser.isEmpty()) {
+            LOG.info("Scenario '{}' sessions: {}", scenario.getName(), sessionIdsByBrowser);
         }
         driverManager.quit();
         if (scenario.isFailed() && DriverFactory.isGrid(config) && config.getBoolean("video")) {

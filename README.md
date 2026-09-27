@@ -19,7 +19,14 @@ Ce qu'il montre :
 - **CI** : contrôle qualité et `@smoke` à chaque PR, régression nocturne Chrome + Firefox sur Selenium Grid,
   sur GitHub Actions et sur **Jenkins** (`Jenkinsfile`, avec un Jenkins local prêt à l'emploi pour le tester).
 
+![Démo : onglets et fenêtres pilotés par alias, puis deux navigateurs dans un même scénario](docs/images/demo.gif)
+
+🎬 **Vidéo de présentation (2 min 20)** : [`demo.mp4`](https://github.com/phlearning/selenium-bdd-framework/releases/download/v1.0.0/demo.mp4),
+scénarios filmés sur la Grid en [mode démo](#mode-démo), puis les rapports.
+
 ## Sommaire
+
+- [En images](#en-images)
 
 - [Démarrage rapide](#démarrage-rapide)
 - [Architecture](#architecture)
@@ -35,6 +42,20 @@ Ce qu'il montre :
 - [Qualité du code](#qualité-du-code)
 - [Choix techniques](#choix-techniques)
 - [Feuille de route](#feuille-de-route)
+- [Pistes d'évolution](#pistes-dévolution)
+
+## En images
+
+| | |
+|---|---|
+| ![Page d'accueil des rapports](docs/images/pages-accueil.png) **Page d'accueil des rapports** sur GitHub Pages : statut, taux de réussite, tendance | ![Rapport Allure, vue d'ensemble](docs/images/allure-apercu.png) **Rapport Allure** : vue d'ensemble, tendance, catégories d'échecs |
+| ![Scénario en échec](docs/images/allure-echec.png) **Échec** : capture, source HTML, logs et vidéo joints au scénario | ![Test instable](docs/images/allure-instable.png) **Test instable** : échoué au 1er passage, réussi au rejeu |
+| ![Test d'API](docs/images/allure-api.png) **API** : requêtes et réponses jointes aux étapes, mot de passe masqué | ![Rapport combiné](docs/images/allure-combine-navigateurs.png) **Rapport combiné** Chrome + Firefox, un paramètre `Navigateur` par test |
+| ![Job Jenkins](docs/images/jenkins-job.png) **Jenkins** : tendances JUnit et Allure, vue des étapes | ![Étapes d'un build Jenkins](docs/images/jenkins-pipeline.png) **Build Jenkins** : étapes et logs |
+
+L'échec et le test instable viennent des scénarios de démonstration ([`echecs.feature`](src/test/resources-demo/features/demo/echecs.feature)), ajoutés
+seulement par le profil Maven `-Pdemo-scenarios`. Les captures et la
+vidéo se régénèrent par script : [`docs/tools/`](docs/tools/README.md).
 
 ## Démarrage rapide
 
@@ -330,6 +351,17 @@ navigateurs).
   La vidéo de chaque navigateur d'un scénario en échec est jointe au rapport Allure. Pas de vidéo en headless.
 - Console de la Grid : <http://localhost:4444> (sessions en cours, VNC).
 
+### Mode démo
+
+`-Ddemo=true` rend une exécution lisible par un humain, pour une démonstration ou pour comprendre un échec en
+regardant le navigateur (ou sa vidéo) : chaque élément est **encadré en rouge** avant d'être utilisé, et une pause
+de `demo.delay` ms (700 par défaut) suit chaque action et chaque étape. Les pauses s'exécutent dans le navigateur
+(`setTimeout`), jamais par `Thread.sleep`.
+
+```bash
+./mvnw test -Dexecution=grid -Dvideo=true -Ddemo=true -Dcucumber.filter.tags="@fenetres"
+```
+
 ## Intégration continue
 
 ```mermaid
@@ -451,6 +483,26 @@ Les deux sont vérifiés par la CI avant tout test. Au-delà des règles classiq
 - [x] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / nightly / manuel), rapports
 - [x] **5. API & qualité** - RestAssured, schémas JSON, Spotless, Checkstyle, Dependabot, documentation
 - [x] **6. Jenkins** - `Jenkinsfile` équivalent, Jenkins local configuré par le code pour le tester
+- [ ] **7. Qualité au-delà du fonctionnel** - accessibilité (axe-core), erreurs console et réseau (Selenium BiDi),
+  régression visuelle
+
+## Pistes d'évolution
+
+Ce que le framework pourrait couvrir ensuite, par intérêt décroissant pour une équipe QA :
+
+| Piste | Apport |
+|---|---|
+| **Accessibilité** avec axe-core | contrôle des règles WCAG en une étape Gherkin, violations détaillées dans le rapport |
+| **Selenium BiDi** : erreurs console et interception réseau | erreurs JavaScript jointes aux échecs ; simulation de pannes ou de lenteurs d'API |
+| **Régression visuelle** (comparaison de captures) | détecte les régressions d'affichage que les assertions ne voient pas |
+| **Notifications** Slack ou Teams | résultat de la régression nocturne poussé à l'équipe, avec le lien du rapport |
+| **Quarantaine des tests instables** | tag `@flaky` hors du verdict, suivi de leur stabilité dans le temps |
+| **Grid sur Kubernetes** (chart Helm, autoscaling KEDA) | nœuds créés à la demande selon la file d'attente de sessions |
+| **Cloud** BrowserStack / Sauce Labs, **mobile** avec Appium | Safari, navigateurs mobiles et applications natives |
+| **Gestion des tests** : Xray, Allure TestOps | traçabilité exigences ↔ scénarios, liens vers les tickets Jira |
+| **Contrat** (Pact), **charge** (Gatling, k6), **sécurité** (OWASP ZAP) | au-delà du fonctionnel |
+| **Données de test** (Datafaker, fabriques), devcontainer | jeux de données générés, environnement prêt en un clic |
+| **Montées de version majeures** : Cucumber 8, JUnit 6, Allure 3, RestAssured 6 | à faire ensemble, volontairement reportées |
 
 ## Applications testées
 

@@ -26,3 +26,4 @@ CLAUDE.local.md
 
 # Local Jenkins data
 jenkins/.data/
+.venv/
