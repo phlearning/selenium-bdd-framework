@@ -37,7 +37,7 @@ export THE_INTERNET_URL=http://the-internet:5000     # navigateurs de la Grid
    ```bash
    rm -f .grid/videos/*
    ./mvnw clean test -DnoRerun -Dexecution=grid -Dvideo=true -Ddemo=true -Dthreads=2 \
-       -Dcucumber.filter.tags="@fenetres or @cadres or @dialogues or @fichiers or @multi-navigateurs or @auth"
+       -Dcucumber.filter.tags="@fenetres or @cadres or @dialogues or @fichiers or @multi-navigateurs or @auth or @bidi"
    ```
 
 2. Le montage : le script retrouve la vidéo de chaque scénario grâce aux lignes `Scenario '...' sessions: {...}`
@@ -50,5 +50,5 @@ export THE_INTERNET_URL=http://the-internet:5000     # navigateurs de la Grid
    Résultat : `docs/images/demo.gif` (README) et `target/media/demo.mp4`, à joindre à une release GitHub :
 
    ```bash
-   gh release upload v1.0.0 target/media/demo.mp4 --clobber
+   gh release upload <version> target/media/demo.mp4 --clobber   # le README pointe sur la dernière release
    ```

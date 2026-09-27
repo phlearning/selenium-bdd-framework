@@ -50,7 +50,9 @@ public abstract class BasePage {
     }
 
     protected WebElement visible(By locator) {
-        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        demo.highlight(driver, element);
+        return element;
     }
 
     protected void click(By locator) {
