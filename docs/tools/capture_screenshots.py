@@ -131,6 +131,40 @@ def report_pages(cam, report):
     cam.scroll_pane_to("step__title", "Alors le catalogue contient")
     cam.shot("allure-echec")
 
+    # WebDriver BiDi: failed requests of the browser, attached to the failed scenario
+    cam.open(f"{report}/#suites")
+    cam.click_text("node__title", "Démonstration des échecs")
+    cam.click_text("node__title", "Le catalogue n'a pas")
+    cam.click_text("step__title", "Post exécution")
+    cam.click_text("step__title", "captureFailureEvidence")
+    cam.click_text("attachment-row", "Failed requests")
+    cam.scroll_pane_to("attachment-row", "Failed requests")
+    cam.shot("allure-bidi")
+
+    # Accessibility audit attached to the step, with a known and accepted issue
+    cam.open(f"{report}/#suites")
+    cam.click_text("node__title", "Accessibilité")
+    cam.click_text("node__title", "Le formulaire de connexion de the-internet")
+    cam.click_text("step__title", "hormis les écarts connus")
+    cam.click_text("attachment-row", "Accessibility audit")
+    cam.scroll_pane_to("step__title", "hormis les écarts connus")
+    cam.shot("allure-accessibilite")
+
+    # Visual regression: reference, screenshot and differences (Allure screen diff)
+    cam.open(f"{report}/#suites")
+    cam.click_text("node__title", "Démonstration des échecs")
+    cam.click_text("node__title", "Une régression visuelle")
+    cam.click_text("step__title", "l'apparence de la page est conforme")
+    cam.click_text("attachment-row", "Visual differences")
+    # The diff is shown at its real size (1920 px): fit it to the pane, as a zoom out would
+    cam.driver.execute_script(
+        "const style = document.createElement('style');"
+        "style.textContent = '.screen-diff__content img, .screen-diff__image { max-width: 100%; height: auto; }';"
+        "document.head.appendChild(style);"
+    )
+    cam.scroll_pane_to("attachment-row", "Visual differences")
+    cam.shot("allure-diff-visuel")
+
     # A flaky scenario: failed on the first pass, passed on the rerun
     cam.open(f"{report}/#suites")
     cam.click_text("node__title", "Démonstration des échecs")

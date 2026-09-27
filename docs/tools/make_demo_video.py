@@ -1,7 +1,7 @@
 """Edits the demo video (MP4) and the README GIF from the Grid videos of a demo-mode run.
 
     ./mvnw clean test -DnoRerun -Dexecution=grid -Dvideo=true -Ddemo=true -Dthreads=2 \
-        -Dcucumber.filter.tags="@fenetres or @cadres or @dialogues or @fichiers or @multi-navigateurs or @auth"
+        -Dcucumber.filter.tags="@fenetres or @cadres or @dialogues or @fichiers or @multi-navigateurs or @auth or @bidi"
     python3 docs/tools/make_demo_video.py
 
 Scenario videos are found through the "Scenario '...' sessions: {...}" lines of the run log.
@@ -23,6 +23,10 @@ BACKGROUND = "0x111827"
 ACCENT = "0x60a5fa"
 # Part of the 1920x1080 Grid screen that holds the pages (the-internet is centred and narrow)
 CROP = "crop=1440:810:240:0"
+# The recording goes on for a moment after the browser quits, on the Grid splash screen: cut it
+TAIL = 1.2
+# ...and starts on it, before the browser window opens
+HEAD = 0.8
 ENCODE = ["-c:v", "libx264", "-preset", "medium", "-crf", "23", "-pix_fmt", "yuv420p", "-r", str(FPS), "-an"]
 
 
@@ -96,9 +100,10 @@ class Editor:
 
     def clip(self, scenario, caption, hold=1.0):
         source = self.video_of(scenario)
-        seconds = self.duration(source) + hold
+        length = self.duration(source) - TAIL - HEAD
+        seconds = length + hold
         filters = [
-            CROP, f"scale={W}:{H}", "setsar=1", f"tpad=stop_mode=clone:stop_duration={hold}",
+            f"trim=start={HEAD}:end={HEAD + length:.2f}", "setpts=PTS-STARTPTS", CROP, f"scale={W}:{H}", "setsar=1", f"tpad=stop_mode=clone:stop_duration={hold}",
             self._caption(caption), self._fades(seconds),
         ]
         return self._render(["-i", str(source), "-vf", ",".join(filters), "-t", f"{seconds:.2f}"], "clip")
@@ -106,13 +111,15 @@ class Editor:
     def duo(self, scenario, left, right, caption, right_delay=3.0, hold=1.0):
         """Two browsers of one scenario, side by side; the right one started later."""
         a, b = self.video_of(scenario, left), self.video_of(scenario, right)
-        seconds = max(self.duration(a), self.duration(b) + right_delay) + hold
+        length_a, length_b = self.duration(a) - TAIL - HEAD, self.duration(b) - TAIL - HEAD
+        seconds = max(length_a, length_b + right_delay) + hold
         half_w, half_h = W // 2 - 10, (W // 2 - 10) * 9 // 16
         top = (H - half_h) // 2 - 20
         graph = ";".join([
-            f"[0:v]{CROP},scale={half_w}:{half_h},setsar=1,tpad=stop_mode=clone:stop_duration=30[a]",
-            f"[1:v]{CROP},scale={half_w}:{half_h},setsar=1,"
-            f"tpad=start_mode=clone:start_duration={right_delay}:stop_mode=clone:stop_duration=30[b]",
+            f"[0:v]trim=start={HEAD}:end={HEAD + length_a:.2f},setpts=PTS-STARTPTS,{CROP},scale={half_w}:{half_h},setsar=1,tpad=stop_mode=clone:stop_duration=30[a]",
+            f"[1:v]trim=start={HEAD}:end={HEAD + length_b:.2f},setpts=PTS-STARTPTS,{CROP},scale={half_w}:{half_h},setsar=1,"
+            # Nothing to show until the second browser starts: an empty panel
+            f"tpad=start_mode=add:start_duration={right_delay}:color={BACKGROUND}:stop_mode=clone:stop_duration=30[b]",
             f"color=c={BACKGROUND}:s={W}x{H}:r={FPS}[bg]",
             f"[bg][a]overlay=5:{top}:shortest=0[t1]",
             f"[t1][b]overlay={W // 2 + 5}:{top}[t2]",
@@ -161,7 +168,7 @@ def read_sessions(log):
 def demo_mp4(ed, images, out):
     img = Path(images)
     parts = [
-        ed.card("Selenium BDD Framework", "Selenium 4 · Java 21 · Cucumber en français · Allure", 5),
+        ed.card("Selenium BDD Framework", "Selenium 4 · Java 21 · Cucumber en français · Allure · BiDi · axe-core", 5),
         ed.card("Des scénarios lisibles par tous",
                 "Gherkin en français, exécutés en parallèle sur une Selenium Grid\n"
                 "Mode démo : chaque élément utilisé est encadré en rouge", 6),
@@ -180,8 +187,14 @@ def demo_mp4(ed, images, out):
         ed.card("Plusieurs navigateurs", "Deux clients connectés en même temps, chacun son panier", 3.5),
         ed.duo("Deux clients connectés en même temps ont chacun leur panier", "Alice", "Bob",
                "Un scénario, deux navigateurs indépendants"),
+        ed.card("Au-delà du fonctionnel", "Accessibilité, erreurs JavaScript et réseau, régression visuelle", 3.5),
+        ed.clip("La boutique reste utilisable quand ses images ne se chargent pas",
+                "WebDriver BiDi : les images échouent exprès, le catalogue reste utilisable"),
+        ed.slide(img / "allure-accessibilite.png", "Accessibilité : audit axe-core WCAG 2.1 AA, écarts connus justifiés", 5),
+        ed.slide(img / "allure-diff-visuel.png", "Régression visuelle : seul le bouton modifié ressort en rouge", 5),
         ed.card("Et quand un test échoue ?", "Le rapport Allure donne tout pour comprendre", 3.5),
         ed.slide(img / "allure-echec.png", "Capture, source de la page, logs et vidéo joints à l'échec", 6),
+        ed.slide(img / "allure-bidi.png", "Requêtes en échec et erreurs JavaScript captées par BiDi", 5),
         ed.slide(img / "allure-instable.png", "Rejeu automatique : réussi au 2e passage, marqué instable", 5),
         ed.slide(img / "allure-api.png", "Tests d'API : requêtes et réponses jointes, secrets masqués", 5),
         ed.slide(img / "allure-apercu.png", "Vue d'ensemble, tendance d'un run à l'autre, catégories d'échecs", 5),

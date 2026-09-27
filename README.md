@@ -24,7 +24,7 @@ Ce qu'il montre :
 
 ![Démo : onglets et fenêtres pilotés par alias, puis deux navigateurs dans un même scénario](docs/images/demo.gif)
 
-🎬 **Vidéo de présentation (2 min 20)** : [`demo.mp4`](https://github.com/phlearning/selenium-bdd-framework/releases/download/v1.0.0/demo.mp4),
+🎬 **Vidéo de présentation (2 min 20)** : [`demo.mp4`](https://github.com/phlearning/selenium-bdd-framework/releases/latest/download/demo.mp4),
 scénarios filmés sur la Grid en [mode démo](#mode-démo), puis les rapports.
 
 ## Sommaire
@@ -54,10 +54,12 @@ scénarios filmés sur la Grid en [mode démo](#mode-démo), puis les rapports.
 |---|---|
 | ![Page d'accueil des rapports](docs/images/pages-accueil.png) **Page d'accueil des rapports** sur GitHub Pages : statut, taux de réussite, tendance | ![Rapport Allure, vue d'ensemble](docs/images/allure-apercu.png) **Rapport Allure** : vue d'ensemble, tendance, catégories d'échecs |
 | ![Scénario en échec](docs/images/allure-echec.png) **Échec** : capture, source HTML, logs et vidéo joints au scénario | ![Test instable](docs/images/allure-instable.png) **Test instable** : échoué au 1er passage, réussi au rejeu |
-| ![Test d'API](docs/images/allure-api.png) **API** : requêtes et réponses jointes aux étapes, mot de passe masqué | ![Rapport combiné](docs/images/allure-combine-navigateurs.png) **Rapport combiné** Chrome + Firefox, un paramètre `Navigateur` par test |
+| ![Scénario avec ses étapes](docs/images/allure-scenario.png) **Scénario** : étapes Gherkin, durées, pièces jointes | ![Rapport combiné](docs/images/allure-combine-navigateurs.png) **Rapport combiné** Chrome + Firefox, un paramètre `Navigateur` par test |
+| ![Audit d'accessibilité](docs/images/allure-accessibilite.png) **Accessibilité** : audit axe-core WCAG 2.1 AA joint à l'étape, écart connu justifié | ![Régression visuelle](docs/images/allure-diff-visuel.png) **Régression visuelle** : seul le bouton modifié ressort en rouge (*screen diff* Allure) |
+| ![Requêtes en échec captées par BiDi](docs/images/allure-bidi.png) **WebDriver BiDi** : requêtes en échec (et erreurs JavaScript) jointes au scénario en échec | ![Test d'API](docs/images/allure-api.png) **API** : requêtes et réponses jointes aux étapes, mot de passe masqué |
 | ![Job Jenkins](docs/images/jenkins-job.png) **Jenkins** : tendances JUnit et Allure, vue des étapes | ![Étapes d'un build Jenkins](docs/images/jenkins-pipeline.png) **Build Jenkins** : étapes et logs |
 
-L'échec et le test instable viennent des scénarios de démonstration ([`echecs.feature`](src/test/resources-demo/features/demo/echecs.feature)), ajoutés
+L'échec, le test instable et la régression visuelle viennent des scénarios de démonstration ([`echecs.feature`](src/test/resources-demo/features/demo/echecs.feature)), ajoutés
 seulement par le profil Maven `-Pdemo-scenarios`. Les captures et la
 vidéo se régénèrent par script : [`docs/tools/`](docs/tools/README.md).
 
@@ -420,7 +422,7 @@ navigateurs).
 
 `-Ddemo=true` rend une exécution lisible par un humain, pour une démonstration ou pour comprendre un échec en
 regardant le navigateur (ou sa vidéo) : chaque élément est **encadré en rouge** avant d'être utilisé, et une pause
-de `demo.delay` ms (700 par défaut) suit chaque action : chargement de page, élément, changement de fenêtre. Les pauses s'exécutent dans le navigateur
+de `demo.delay` ms (700 par défaut) suit chaque action (chargement de page, élément, changement de fenêtre) et précède la fermeture du navigateur. Les pauses s'exécutent dans le navigateur
 (`setTimeout`), jamais par `Thread.sleep`.
 
 ```bash

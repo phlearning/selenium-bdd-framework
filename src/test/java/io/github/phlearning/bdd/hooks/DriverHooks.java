@@ -4,6 +4,7 @@ import io.cucumber.java.After;
 import io.cucumber.java.Scenario;
 import io.github.phlearning.bdd.config.Config;
 import io.github.phlearning.bdd.driver.BrowserSession;
+import io.github.phlearning.bdd.driver.DemoMode;
 import io.github.phlearning.bdd.driver.DriverFactory;
 import io.github.phlearning.bdd.driver.DriverManager;
 import io.github.phlearning.bdd.reporting.GridVideos;
@@ -23,6 +24,7 @@ public class DriverHooks {
 
     private final DriverManager driverManager;
     private final Config config = Config.get();
+    private final DemoMode demo = DemoMode.from(config);
 
     public DriverHooks(DriverManager driverManager) {
         this.driverManager = driverManager;
@@ -42,6 +44,8 @@ public class DriverHooks {
         if (!sessionIdsByBrowser.isEmpty()) {
             LOG.info("Scenario '{}' sessions: {}", scenario.getName(), sessionIdsByBrowser);
         }
+        // Demo mode: the final state of each browser stays on screen (and in its video) for a moment
+        driverManager.startedSessions().forEach(session -> demo.pause(session.driver()));
         driverManager.quit();
         if (scenario.isFailed() && DriverFactory.isGrid(config) && config.getBoolean("video")) {
             attachVideos(scenario, sessionIdsByBrowser);
