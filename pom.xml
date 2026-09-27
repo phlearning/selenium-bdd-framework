@@ -20,13 +20,13 @@
         <allure.version>2.35.5</allure.version>
         <allure.report.version>2.46.1</allure.report.version>
         <assertj.version>3.27.7</assertj.version>
-        <logback.version>1.5.38</logback.version>
+        <logback.version>1.6.3</logback.version>
         <dotenv.version>3.2.0</dotenv.version>
         <rest-assured.version>5.5.7</rest-assured.version>
         <jackson.version>2.22.3</jackson.version>
 
         <surefire.version>3.6.0</surefire.version>
-        <compiler.version>3.15.0</compiler.version>
+        <compiler.version>3.16.0</compiler.version>
         <allure-maven.version>3.1.0</allure-maven.version>
         <spotless.version>3.10.3</spotless.version>
         <palantir-java-format.version>2.99.0</palantir-java-format.version>
