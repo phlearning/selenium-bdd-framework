@@ -250,6 +250,23 @@
     </build>
 
     <profiles>
+        <!-- ./mvnw clean test -Pdemo-scenarios : adds the demo scenarios (a real failure, a flaky test),
+             used for the screenshots of the documentation (docs/tools). Always with clean: otherwise
+             they stay in target/test-classes for the next runs. -->
+        <profile>
+            <id>demo-scenarios</id>
+            <build>
+                <testResources>
+                    <testResource>
+                        <directory>src/test/resources</directory>
+                    </testResource>
+                    <testResource>
+                        <directory>src/test/resources-demo</directory>
+                    </testResource>
+                </testResources>
+            </build>
+        </profile>
+
         <!-- ./mvnw test -DnoRerun : single pass, failures fail the build immediately -->
         <profile>
             <id>no-rerun</id>
