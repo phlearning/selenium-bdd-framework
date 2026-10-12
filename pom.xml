@@ -14,13 +14,13 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <selenium.version>4.49.0</selenium.version>
+        <selenium.version>4.50.0</selenium.version>
         <cucumber.version>7.34.9</cucumber.version>
         <junit.version>5.14.4</junit.version>
         <allure.version>2.35.5</allure.version>
         <allure.report.version>2.46.1</allure.report.version>
         <assertj.version>3.27.7</assertj.version>
-        <logback.version>1.6.3</logback.version>
+        <logback.version>1.6.5</logback.version>
         <dotenv.version>3.2.0</dotenv.version>
         <rest-assured.version>5.5.7</rest-assured.version>
         <jackson.version>2.22.3</jackson.version>
@@ -29,10 +29,10 @@
         <surefire.version>3.6.0</surefire.version>
         <compiler.version>3.16.0</compiler.version>
         <allure-maven.version>3.1.0</allure-maven.version>
-        <spotless.version>3.10.3</spotless.version>
+        <spotless.version>3.10.4</spotless.version>
         <palantir-java-format.version>2.99.0</palantir-java-format.version>
         <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
-        <checkstyle.version>14.1.0</checkstyle.version>
+        <checkstyle.version>14.3.0</checkstyle.version>
 
         <!-- Runtime switches, overridable with -D (see README) -->
         <cucumber.filter.tags>not @wip</cucumber.filter.tags>
