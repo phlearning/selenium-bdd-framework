@@ -1,10 +1,8 @@
-# Full regression: every night on Chrome and Firefox (Selenium Grid, videos), or on demand
-# with any combination of browser, tags, execution mode and environment.
+# Full regression, on demand only (no schedule): Chrome and Firefox on Selenium Grid with videos by
+# default, or any combination of browser, tags, execution mode and environment.
 name: Regression
 
 on:
-  schedule:
-    - cron: "0 2 * * *" # 02:00 UTC
   workflow_dispatch:
     inputs:
       browser:
@@ -47,16 +45,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Scheduled runs have no inputs: they run every browser.
         browser: ${{ fromJSON(inputs.browser == 'chrome' && '["chrome"]' || inputs.browser == 'firefox' && '["firefox"]' || '["chrome","firefox"]') }}
     uses: ./.github/workflows/run-tests.yml
     with:
       browser: ${{ matrix.browser }}
       tags: ${{ inputs.tags || 'not @wip' }}
       execution: ${{ inputs.execution || 'grid' }}
-      # Explicit conversions: the called workflow's boolean / number inputs reject null (scheduled
-      # runs have no inputs) and strings.
-      video: ${{ github.event_name == 'schedule' || format('{0}', inputs.video) == 'true' }}
+      # Explicit conversions: the called workflow's boolean / number inputs reject null and strings.
+      video: ${{ format('{0}', inputs.video) == 'true' }}
       threads: ${{ fromJSON(inputs.threads || '3') }}
       env: ${{ inputs.env || 'demo' }}
       report-name: regression-${{ matrix.browser }}
@@ -80,7 +76,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment-retry.outputs.page_url || steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -153,5 +149,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+      # deploy-pages looks the artifact up through the API right after the upload and sometimes
+      # does not see it yet ("No artifacts named github-pages"): retry once after a pause.
       - id: deployment
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+      - name: Wait before retrying the deployment
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+      - id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v5
