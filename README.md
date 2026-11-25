@@ -438,7 +438,7 @@ flowchart LR
     subgraph ci["ci.yml : push sur main, pull request"]
         Q["quality<br/>Spotless, Checkstyle,<br/>compilation"] --> SM["smoke<br/>@smoke, Chrome headless"]
     end
-    subgraph reg["regression.yml : chaque nuit, ou manuel"]
+    subgraph reg["regression.yml : manuel"]
         RC["regression-chrome<br/>Grid + vidéos"]
         RF["regression-firefox<br/>Grid + vidéos"]
         RC & RF -.->|"si activé"| PG["publish-pages"]
@@ -451,7 +451,7 @@ flowchart LR
 | Workflow | Déclencheur | Contenu |
 |---|---|---|
 | [`ci.yml`](.github/workflows/ci.yml) | push sur `main`, pull request | qualité du code, puis `@smoke` (UI et API) sur Chrome headless |
-| [`regression.yml`](.github/workflows/regression.yml) | chaque nuit (02:00 UTC) | tout sauf `@wip`, Chrome **et** Firefox en parallèle (matrice), Grid Docker, vidéos |
+| [`regression.yml`](.github/workflows/regression.yml) | manuel (`workflow_dispatch`) | tout sauf `@wip`, Chrome **et** Firefox en parallèle (matrice), Grid Docker, vidéos |
 | [`regression.yml`](.github/workflows/regression.yml) | manuel (*Run workflow*) | navigateur, tags, local / Grid, vidéos, threads, environnement au choix |
 
 Le workflow réutilisable [`run-tests.yml`](.github/workflows/run-tests.yml) :
@@ -551,7 +551,7 @@ Les deux sont vérifiés par la CI avant tout test. Au-delà des règles classiq
 - [x] **1. Socle** - Maven, configuration, gestion des navigateurs, POM, PicoContainer, scénarios `@smoke`, Allure
 - [x] **2. Robustesse** - parallélisation, rejeu des scénarios en échec, captures d'écran, logs
 - [x] **3. Multi** - onglets, fenêtres, iframes, plusieurs navigateurs par scénario
-- [x] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / nightly / manuel), rapports
+- [x] **4. CI** - Selenium Grid (Docker), vidéos, GitHub Actions (push / manuel), rapports
 - [x] **5. API & qualité** - RestAssured, schémas JSON, Spotless, Checkstyle, Dependabot, documentation
 - [x] **6. Jenkins** - `Jenkinsfile` équivalent, Jenkins local configuré par le code pour le tester
 - [x] **7. Au-delà du fonctionnel** - accessibilité (axe-core), erreurs JavaScript et réseau (WebDriver BiDi),

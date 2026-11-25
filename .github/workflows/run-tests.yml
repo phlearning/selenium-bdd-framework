@@ -1,5 +1,5 @@
 # Reusable workflow: runs the Cucumber suite once (one browser) and publishes its reports.
-# Called by ci.yml (push / pull request) and regression.yml (nightly / manual).
+# Called by ci.yml (push / pull request) and regression.yml (manual).
 name: Run tests
 
 on:
